@@ -2,21 +2,27 @@
   "expo": {
     "name": "qappsa",
     "slug": "qappsa",
-    "version": "1.0.0",
+    "version": "0.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "qappsa",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "qappsa.com"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "qappsa.com"
     },
     "web": {
       "bundler": "metro",
@@ -45,6 +51,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "c906295c-f5ca-4a51-b36a-544eff2bac91"
+      }
     }
   }
 }
