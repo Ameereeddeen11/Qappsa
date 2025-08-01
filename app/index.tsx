@@ -1,101 +1,98 @@
-import { CameraView, useCameraPermissions } from "expo-camera";
-import { useRouter } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { useEffect, useState } from "react";
-import { Platform, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { BarcodeScanningResult, CameraView, useCameraPermissions } from 'expo-camera';
+import { useEffect, useState } from 'react';
+import { Button, Dimensions, StyleSheet, Text, View } from 'react-native';
 
-export default function Home() {
-  const router = useRouter();
-  const [scannedData, setScannedData] = useState(false);
+export default function BarcodeScannerPage() {
   const [permission, requestPermission] = useCameraPermissions();
+  const [scannedData, setScannedData] = useState<string[]>([]);
+  const [isScanning, setIsScanning] = useState(false);
 
-  const isPermissionGranted = Boolean(permission?.granted);
+  const handleBarCodeScanned = (result: BarcodeScanningResult[]) => {
+    if (!isScanning) return;
+    if (result.length > 0) {
+      const value = result[0].rawValue ?? '';
+      if (value && !scannedData.includes(value)) {
+        setScannedData((prev) => [...prev, value]);
+      }
+      setIsScanning(false); // vypni skenování po jednom skenu
+    }
+  };
 
   useEffect(() => {
-    if (!isPermissionGranted) {
+    if (!permission || !permission.granted) {
       requestPermission();
     }
-  }, [isPermissionGranted, requestPermission]);
+  }, []);
+
+  if (!permission) {
+    return <Text>Načítání oprávnění ke kameře...</Text>;
+  }
+
+  if (!permission.granted) {
+    return (
+      <View style={styles.center}>
+        <Text>Nemáš oprávnění ke kameře.</Text>
+        <Button title="Povolit přístup" onPress={requestPermission} />
+      </View>
+    );
+  }
 
   return (
-    <SafeAreaView style={styles.container}>
-      {isPermissionGranted ? (
-        <>
-          <CameraView
-            style={{
-              width: "100%",
-              height: "50%",
-            }}
-            facing="back"
-            onBarcodeScanned={({ data }) => {
-              if (data && !scannedData) {
-                setScannedData(true);
-                router.push({
-                  pathname: "/scanner",
-                  params: { scannedData: data },
-                });
-              } else {
-                setScannedData(false);
-              }
-            }}
-          />
-          {Platform.OS === "android" && <StatusBar hidden />}
-        </>
-      ) : (
-        <View
-          style={{
-            alignItems: "center",
-            gap: 20,
-            width: "100%",
-            height: "50%",
+    <View style={styles.container}>
+      <View style={styles.cameraContainer}>
+        <CameraView
+          style={styles.camera}
+          onBarcodeScanned={handleBarCodeScanned}
+          barcodeScannerSettings={{
+            barcodeTypes: ['qr', 'ean13', 'ean8', 'code128', 'code39', 'code93'],
           }}
-        >
-          <Text style={styles.title}>Povolení kamery</Text>
-          <Text>Přístup ke kameře byl zamítnut</Text>
-          <Pressable
-            onPress={requestPermission}
-            style={{ padding: 10, backgroundColor: "#0E7AFE" }}
-          >
-            <Text style={{ color: "white" }}>Povolit přístup</Text>
-          </Pressable>
-        </View>
-      )}
-      <View style={{ gap: 20, width: "100%", alignItems: "center" }}>
-        {/* <Pressable onPress={requestPermission}>
-          <Text style={styles.buttonStyle}>Request Permissions</Text>
-        </Pressable>
-        <Link href={"/scanner"} asChild>
-          <Pressable disabled={!isPermissionGranted}>
-            <Text
-              style={[
-                styles.buttonStyle,
-                { opacity: !isPermissionGranted ? 0.5 : 1 },
-              ]}
-            >
-              Scan Code
-            </Text>
-          </Pressable>
-        </Link> */}
+        />
       </View>
-    </SafeAreaView>
+
+      <View style={styles.listContainer}>
+        <Button title="Naskenovat" onPress={() => setIsScanning(true)} />
+        <Text>{scannedData}</Text>
+        {/* <FlatList
+          data={scannedData}
+          keyExtractor={(item, index) => `${item}-${index}`}
+          renderItem={({ item }) => (
+            <View style={styles.item}>
+              <Text>{item}</Text>
+            </View>
+          )}
+          ListEmptyComponent={<Text>Žádná data naskenována.</Text>}
+        /> */}
+      </View>
+    </View>
   );
 }
+
+const screenHeight = Dimensions.get('window').height;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
-    backgroundColor: "black",
-    justifyContent: "space-around",
-    paddingVertical: 80,
   },
-  title: {
-    color: "white",
-    fontSize: 40,
+  cameraContainer: {
+    height: screenHeight / 2,
+    backgroundColor: '#000',
   },
-  buttonStyle: {
-    color: "#0E7AFE",
-    fontSize: 20,
-    textAlign: "center",
+  camera: {
+    flex: 1,
+  },
+  listContainer: {
+    flex: 1,
+    padding: 12,
+  },
+  item: {
+    padding: 10,
+    marginVertical: 5,
+    backgroundColor: '#eee',
+    borderRadius: 8,
+  },
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
