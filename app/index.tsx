@@ -1,20 +1,36 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Button, FlatList, StyleSheet, Text, View } from 'react-native';
-import { IconButton, TouchableRipple } from 'react-native-paper';
+import { Button, FlatList, StyleSheet, View } from 'react-native';
+import { IconButton, Text, TouchableRipple } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanning, setScanning] = useState(false);
-  const [codes, setCodes] = useState<{ type: string; data: string; id: string }[]>([]);
+  // const [codes, setCodes] = useState<{ type: string; data: string; count: number; id: string }[]>([]);
+  const [codes, setCodes] = useState<{ data: string; count: number; id: string }[]>([]);
   const scannedRef = useRef(false);
+  const router = useRouter();
 
-  const handleBarCodeScanned = ({ type, data }: { type: string; data: string }) => {
+  const handleBarCodeScanned = ({ data }: { data: string }) => {
     if (scannedRef.current) return;
     scannedRef.current = true;
 
-    setCodes(prev => [...prev, { type, data, id: String(prev.length) }]);
+    // setCodes(prev => [...prev, { type, data, id: String(prev.length), count: 1 }]);
+    setCodes(prev => {
+      const existingIndex = prev.findIndex(item => item.data === data);
+      if (existingIndex !== -1) {
+        const updated = [...prev];
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          count: updated[existingIndex].count + 1
+        };
+        return updated;
+      } else {
+        return [...prev, { data, id: String(prev.length), count: 1 }];
+      }
+    });
     setScanning(false);
   };
 
@@ -26,6 +42,16 @@ export default function HomeScreen() {
   const removeScanedCode = (id: string) => {
     setCodes(prev => prev.filter(code => code.id !== id));
   };
+
+  const routeToDetail = (id: string) => {
+    const code = codes.find(code => code.id === id);
+    if (code) {
+      router.push({
+        pathname: '/detail',
+        params: { data: code.data, count: code.count }
+      })
+    }
+  }
 
   // const removeScanedCode = (id: string) => {
   //   setCodes(prev => prev.filter(code => code.id !== String(id)));
@@ -53,15 +79,15 @@ export default function HomeScreen() {
       <View style={styles.container}>
         <View style={styles.cameraContainer}>
           {!scanning ? (
-            <Button title='Scan bar code' onPress={startScan} />
+            <Button title='Naskenujte čárový kód' onPress={startScan} />
           ) : (
             <>
               <CameraView
                 style={styles.camera}
                 onBarcodeScanned={handleBarCodeScanned}
               />
-              <Text style={styles.scanningText}>Point the camera at a barcode...</Text>
-              <Button title="Cancel" onPress={() => setScanning(false)} />
+              <Text style={styles.scanningText}>Namiřte fotoaparát na čárový kód...</Text>
+              <Button title="Zrušit" onPress={() => setScanning(false)} />
             </>
           )}
         </View>
@@ -69,11 +95,14 @@ export default function HomeScreen() {
           data={codes}
           keyExtractor={item => item.id}
           renderItem={({ item }) => (
-            <TouchableRipple style={styles.listItem} onPress={() => console.log(item)}>
+            <TouchableRipple style={styles.listItem} onPress={() => routeToDetail(item.id)}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <View style={{ flex: 1, justifyContent: 'center' }}>
-                  <Text>Type: {item.type}</Text>{'\n'}
+                  {/* <Text>Typ: {item.type}</Text> */}
                   <Text>Data: {item.data}</Text>
+                </View>
+                <View style={{ flex: 1, justifyContent: 'center' }}>
+                  <Text>Pocet: {item.count}</Text>
                 </View>
                 <>
                   <IconButton 
