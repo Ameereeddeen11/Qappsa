@@ -8,7 +8,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 export default function HomeScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanning, setScanning] = useState(false);
-  // const [codes, setCodes] = useState<{ type: string; data: string; count: number; id: string }[]>([]);
   const [codes, setCodes] = useState<{ data: string; count: number; id: string }[]>([]);
   const scannedRef = useRef(false);
   const router = useRouter();
@@ -17,7 +16,6 @@ export default function HomeScreen() {
     if (scannedRef.current) return;
     scannedRef.current = true;
 
-    // setCodes(prev => [...prev, { type, data, id: String(prev.length), count: 1 }]);
     setCodes(prev => {
       const existingIndex = prev.findIndex(item => item.data === data);
       if (existingIndex !== -1) {
@@ -52,10 +50,6 @@ export default function HomeScreen() {
       })
     }
   }
-
-  // const removeScanedCode = (id: string) => {
-  //   setCodes(prev => prev.filter(code => code.id !== String(id)));
-  // }
 
   if (!permission) {
     return ( 
