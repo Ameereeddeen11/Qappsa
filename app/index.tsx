@@ -2,13 +2,12 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Button, FlatList, StyleSheet, View } from 'react-native';
-import { IconButton, Text, TouchableRipple } from 'react-native-paper';
+import { Icon, IconButton, Text, TouchableRipple } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanning, setScanning] = useState(false);
-  // const [codes, setCodes] = useState<{ type: string; data: string; count: number; id: string }[]>([]);
   const [codes, setCodes] = useState<{ data: string; count: number; id: string }[]>([]);
   const scannedRef = useRef(false);
   const router = useRouter();
@@ -17,7 +16,6 @@ export default function HomeScreen() {
     if (scannedRef.current) return;
     scannedRef.current = true;
 
-    // setCodes(prev => [...prev, { type, data, id: String(prev.length), count: 1 }]);
     setCodes(prev => {
       const existingIndex = prev.findIndex(item => item.data === data);
       if (existingIndex !== -1) {
@@ -53,10 +51,6 @@ export default function HomeScreen() {
     }
   }
 
-  // const removeScanedCode = (id: string) => {
-  //   setCodes(prev => prev.filter(code => code.id !== String(id)));
-  // }
-
   if (!permission) {
     return ( 
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -79,7 +73,13 @@ export default function HomeScreen() {
       <View style={styles.container}>
         <View style={styles.cameraContainer}>
           {!scanning ? (
-            <Button title='Naskenujte čárový kód' onPress={startScan} />
+            <IconButton
+              icon="barcode-scan"
+              mode='contained'
+              size={250}
+              onPress={startScan}
+              style={{ borderRadius: 25 }}
+            />
           ) : (
             <>
               <CameraView
