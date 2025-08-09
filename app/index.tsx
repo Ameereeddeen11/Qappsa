@@ -2,7 +2,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Button, FlatList, StyleSheet, View } from 'react-native';
-import { IconButton, Text, TouchableRipple } from 'react-native-paper';
+import { Icon, IconButton, Text, TouchableRipple } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
@@ -73,7 +73,13 @@ export default function HomeScreen() {
       <View style={styles.container}>
         <View style={styles.cameraContainer}>
           {!scanning ? (
-            <Button title='Naskenujte čárový kód' onPress={startScan} />
+            <IconButton
+              icon="barcode-scan"
+              mode='contained'
+              size={250}
+              onPress={startScan}
+              style={{ borderRadius: 25 }}
+            />
           ) : (
             <>
               <CameraView

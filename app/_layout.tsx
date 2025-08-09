@@ -21,8 +21,8 @@ export default function RootLayout() {
     <PaperProvider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack>
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="detail" options={{ headerShown: true }} />
+          <Stack.Screen name="index" options={{ headerShown: false, title: "Home" }} />
+          <Stack.Screen name="detail" options={{ headerShown: true, title: "Detail" }} />
         </Stack>
         <StatusBar style="auto" />
       </ThemeProvider>

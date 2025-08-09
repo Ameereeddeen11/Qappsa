@@ -5,39 +5,50 @@ import { Button, Text, TextInput } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function DetailPage() {
-    const { count, data } = useLocalSearchParams();
+    let { count, data } = useLocalSearchParams();
     const [ id, setID ] = useState();
+    const [ countDynamic, setCountDynamic ] = useState(count);
     const [ sale, setSale ] = useState();
 
     return (
         <SafeAreaView>
             <ScrollView contentContainerStyle={styles.container}>
                 <TextInput
-                    label="Data"
+                    label="ID"
                     mode="outlined"
                     value={data as string}
                     disabled={true}
                     style={{ width: '90%', marginBottom: 20 }}
                 />
                 <TextInput
-                    label="Data"
+                    label="Počet"
                     mode="outlined"
-                    value={count as string}
+                    value={countDynamic as string}
+                    onChangeText={text => setCountDynamic(text)}
                     style={{ width: '90%', marginBottom: 20 }}
-                    disabled={true}
-                />
-                <TextInput
-                    label="Sleva"
-                    mode="outlined"
-                    value={sale}
-                    style={{ width: '90%' }}
                 />
                 <Button
                     mode="contained"
-                    onPress={() => console.log('Save pressed')}
+                    onPress={() => console.log('Uložit')}
                     style={{ width: '90%', marginTop: 20 }}
                 >
-                    Save
+                    Ulozit
+                </Button>
+                <Button
+                    mode="contained"
+                    onPress={() => console.log('Generovat CSV soubor')}
+                    style={{ width: '90%', marginTop: 20 }}
+                >
+                    Generovat CSV soubor
+                </Button>
+                <Button
+                    mode="contained"
+                    textColor="white"
+                    buttonColor="red"
+                    onPress={() => console.log('Smazat')}
+                    style={{ width: '90%', marginTop: 20 }}
+                >
+                    Smazat
                 </Button>
             </ScrollView>
         </SafeAreaView>
