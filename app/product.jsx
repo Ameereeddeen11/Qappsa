@@ -45,7 +45,7 @@ export default function DetailPage() {
         <TextInput
           label="Počet"
           mode="outlined"
-          value={countDynamic}
+          value={countDynamic.toString()}
           onChangeText={(countDynamic) => setCountDynamic(countDynamic)}
           // onChangeText={(text) => setCountDynamic(text)}
           style={{ width: "90%", marginBottom: 20 }}

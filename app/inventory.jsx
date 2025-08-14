@@ -8,6 +8,7 @@ import { getProducts, addProduct, deleteProduct } from "../utils/products";
 import { GlobalContext } from "@/context/GlobalProvider";
 import { RefreshControl } from "react-native";
 import { getInventories } from "@/utils/inventory";
+import { exportToCSV, formatDataForExport } from "@/utils/export";
 
 export default function InventoryScreen() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -33,7 +34,7 @@ export default function InventoryScreen() {
       setProducts(data);
     };
     fetchProducts();
-  }, [date]);
+  }, []);
 
   const handleBarCodeScanned = async ({ data }) => {
     if (scannedRef.current) return;
@@ -157,7 +158,10 @@ export default function InventoryScreen() {
         <IconButton
           icon="file-export"
           size={70}
-          // onPress={() => router.push({ pathname: "/products", params: { date } })}
+          onPress={() => {
+            const formattedData = formatDataForExport(products);
+            exportToCSV(formattedData, `inventury_${date}`);
+          }}
           style={styles.createInventoryButtton}
         />
     </SafeAreaView>
