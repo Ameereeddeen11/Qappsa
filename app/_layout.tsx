@@ -1,15 +1,19 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { PaperProvider } from 'react-native-paper';
-
-import { useColorScheme } from '@/hooks/useColorScheme';
+import {
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider,
+} from "@react-navigation/native";
+import { useFonts } from "expo-font";
+import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { PaperProvider } from "react-native-paper";
+import { GlobalProvider } from "@/context/GlobalProvider";
+import { useColorScheme } from "@/hooks/useColorScheme";
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
 
   if (!loaded) {
@@ -19,12 +23,24 @@ export default function RootLayout() {
 
   return (
     <PaperProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="index" options={{ headerShown: false, title: "Home" }} />
-          <Stack.Screen name="detail" options={{ headerShown: true, title: "Detail" }} />
-        </Stack>
-        <StatusBar style="auto" />
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        <GlobalProvider>
+          <Stack>
+            <Stack.Screen
+              name="index"
+              options={{ headerShown: false, title: "Home" }}
+            />
+            <Stack.Screen
+              name="inventory"
+              options={{ headerShown: true, title: "Inventory" }}
+            />
+            <Stack.Screen
+              name="product"
+              options={{ headerShown: true, title: "Product" }}
+            />
+          </Stack>
+          <StatusBar style="auto" />
+        </GlobalProvider>
       </ThemeProvider>
     </PaperProvider>
   );
