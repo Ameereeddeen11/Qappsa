@@ -7,7 +7,7 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { PaperProvider } from "react-native-paper";
-
+import { GlobalProvider } from "@/context/GlobalProvider";
 import { useColorScheme } from "@/hooks/useColorScheme";
 
 export default function RootLayout() {
@@ -24,21 +24,23 @@ export default function RootLayout() {
   return (
     <PaperProvider>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen
-            name="index"
-            options={{ headerShown: false, title: "Home" }}
-          />
-          <Stack.Screen
-            name="inventory"
-            options={{ headerShown: true, title: "Inventory" }}
-          />
-          <Stack.Screen
-            name="product"
-            options={{ headerShown: true, title: "Product" }}
-          />
-        </Stack>
-        <StatusBar style="auto" />
+        <GlobalProvider>
+          <Stack>
+            <Stack.Screen
+              name="index"
+              options={{ headerShown: false, title: "Home" }}
+            />
+            <Stack.Screen
+              name="inventory"
+              options={{ headerShown: true, title: "Inventory" }}
+            />
+            <Stack.Screen
+              name="product"
+              options={{ headerShown: true, title: "Product" }}
+            />
+          </Stack>
+          <StatusBar style="auto" />
+        </GlobalProvider>
       </ThemeProvider>
     </PaperProvider>
   );

@@ -1,10 +1,13 @@
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useRouter, useGlobalSearchParams, Stack } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useContext } from "react";
 import { FlatList, StyleSheet, View } from "react-native";
 import { IconButton, Text, TouchableRipple, Button } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getProducts, addProduct, deleteProduct } from "../utils/products";
+import { GlobalContext } from "@/context/GlobalProvider";
+import { RefreshControl } from "react-native";
+import { getInventories } from "@/utils/inventory";
 
 export default function InventoryScreen() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -12,8 +15,17 @@ export default function InventoryScreen() {
   const [products, setProducts] = useState([]);
   const scannedRef = useRef(false);
   const router = useRouter();
+  const { refreshing, setRefreshing } = useContext(GlobalContext);
 
   const { date } = useGlobalSearchParams();
+
+  const onRefresh = () => {
+    const fetchProducts = async () => {
+      const data = await getProducts(date);
+      setProducts(data);
+    };
+    fetchProducts();
+  }
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -42,7 +54,7 @@ export default function InventoryScreen() {
     } else {
       router.push({
         pathname: "/product",
-        params: { id: item.id, count: item.count, date: date },
+        params: { id: item.id, date: date },
       });
     }
   };
@@ -110,6 +122,9 @@ export default function InventoryScreen() {
           )}
         </View>
         <FlatList
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
           data={products}
           keyExtractor={(item) => String(item.id)}
           renderItem={({ item }) => (

@@ -1,17 +1,40 @@
-import { useState } from "react";
+import { useState, useContext, useEffect } from "react";
 import { useLocalSearchParams } from "expo-router";
-import { ScrollView, StyleSheet } from "react-native";
+import { RefreshControl, ScrollView, StyleSheet } from "react-native";
 import { Button, TextInput } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { getProducts, updateProductCount, deleteProduct } from "../utils/products"
+import { GlobalContext } from "@/context/GlobalProvider";
+import { updateProductCount, deleteProduct, getProductByID } from "../utils/products"
 
 export default function DetailPage() {
-  let { count, id, date } = useLocalSearchParams();
-  const [countDynamic, setCountDynamic] = useState(count);
+  const { id, date } = useLocalSearchParams();
+  const [countDynamic, setCountDynamic] = useState(0);
+  const { refreshing, setRefreshing } = useContext(GlobalContext);
+
+  useEffect(() => {
+    setRefreshing(true);
+    getProductByID(date, id).then((data) => {
+      setCountDynamic(data.count);
+      setRefreshing(false)
+    });
+  }, [])
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    getProductByID(date, id).then((data) => {
+      setRefreshing(false);
+      setCountDynamic(data.count);
+    })
+  }
 
   return (
     <SafeAreaView>
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView 
+        contentContainerStyle={styles.container}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         <TextInput
           label="ID"
           mode="outlined"
@@ -23,15 +46,16 @@ export default function DetailPage() {
           label="Počet"
           mode="outlined"
           value={countDynamic}
-          onChangeText={(text) => setCountDynamic(text)}
+          onChangeText={(countDynamic) => setCountDynamic(countDynamic)}
+          // onChangeText={(text) => setCountDynamic(text)}
           style={{ width: "90%", marginBottom: 20 }}
         />
         <Button
           mode="contained"
           onPress={() => {
-            updateProductCount(date, data, countDynamic)
+            updateProductCount(date, id, countDynamic)
               .then(() => {
-                console.log("Počet produktu aktualizován");
+                onRefresh();
               })
               .catch((error) => {
                 console.error("Chyba při aktualizaci počtu produktu:", error);

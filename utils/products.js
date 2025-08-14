@@ -1,4 +1,3 @@
-// utils/productStorage.js
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getInventories } from "./inventory";
 
@@ -13,6 +12,21 @@ export const getProducts = async (date) => {
     return products;
   } catch (err) {
     console.error("getProducts error", err);
+    return [];
+  }
+};
+
+export const getProductByID = async (date, id) => {
+  if (!date && !id) return [];
+  try {
+    const inventories = await getInventories();
+    // console.log(inventories);
+    const allProducts = inventories[date];
+    // console.log(allProducts);
+    const product = allProducts.find(item => item.id === id);
+    return product;
+  } catch (err) {
+    console.error("getOneProduct", err);
     return [];
   }
 };
