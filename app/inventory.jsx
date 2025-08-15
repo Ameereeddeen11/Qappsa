@@ -2,37 +2,47 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { useRouter, useGlobalSearchParams, Stack } from "expo-router";
 import { useEffect, useRef, useState, useContext } from "react";
 import { FlatList, StyleSheet, View } from "react-native";
-import { IconButton, Text, TouchableRipple, Button } from "react-native-paper";
+import {
+  IconButton,
+  Text,
+  Button,
+  Card,
+  Title,
+  Paragraph,
+  FAB,
+  Portal,
+  PaperProvider
+} from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getProducts, addProduct, deleteProduct } from "../utils/products";
 import { GlobalContext } from "@/context/GlobalProvider";
 import { RefreshControl } from "react-native";
-import { getInventories } from "@/utils/inventory";
 import { exportToCSV, formatDataForExport } from "@/utils/export";
 
 export default function InventoryScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanning, setScanning] = useState(false);
   const [products, setProducts] = useState([]);
+  const [state, setState] = useState(false);
   const scannedRef = useRef(false);
   const router = useRouter();
   const { refreshing, setRefreshing } = useContext(GlobalContext);
-
   const { date } = useGlobalSearchParams();
 
+  const onStateChange = ({ open }) => setState({ open });
+
+  const { open } = state;
+
+  const fetchProducts = async () => {
+    const data = await getProducts(date);
+    setProducts(data);
+  };
+
   const onRefresh = () => {
-    const fetchProducts = async () => {
-      const data = await getProducts(date);
-      setProducts(data);
-    };
     fetchProducts();
-  }
+  };
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      const data = await getProducts(date);
-      setProducts(data);
-    };
     fetchProducts();
   }, []);
 
@@ -50,12 +60,10 @@ export default function InventoryScreen() {
   };
 
   const handlePress = ({ item }) => {
-    if (scanning) {
-      setScanning(false);
-    } else {
+    if (!scanning) {
       router.push({
         pathname: "/product",
-        params: { id: item.id, date: date },
+        params: { id: item.id, date },
       });
     }
   };
@@ -76,7 +84,7 @@ export default function InventoryScreen() {
 
   if (!permission) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <View style={styles.centered}>
         <Text>Loading camera permission...</Text>
       </View>
     );
@@ -84,33 +92,30 @@ export default function InventoryScreen() {
 
   if (!permission.granted) {
     return (
-      <View style={{ flex: 1 }}>
+      <View style={styles.centered}>
         <Text style={styles.message}>
           We need your permission to show the camera
         </Text>
-        <Button onPress={requestPermission} title="grant permission" />
+        <Button mode="contained" onPress={requestPermission}>
+          Grant Permission
+        </Button>
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Stack.Screen
-        options={{
-          title: date ? `Inventura: ${date}` : "Inventury"
-        }}
-      />
-        <View style={styles.cameraContainer}>
-          {!scanning ? (
-            <IconButton
-              icon="magnify-scan"
-              mode="contained"
-              size={250}
-              onPress={startScan}
-              style={{ borderRadius: 25 }}
-            />
-          ) : (
-            <>
+    <PaperProvider>
+      <Portal>
+        <SafeAreaView style={styles.container}>
+          <Stack.Screen
+            options={{
+              title: date ? `Inventura: ${date}` : "Inventury",
+            }}
+          />
+
+          {/* Scanning overlay */}
+          {scanning ? (
+            <View style={styles.cameraOverlay}>
               <CameraView
                 style={styles.camera}
                 onBarcodeScanned={handleBarCodeScanned}
@@ -118,90 +123,141 @@ export default function InventoryScreen() {
               <Text style={styles.scanningText}>
                 Namiřte fotoaparát na čárový kód...
               </Text>
-              <Button title="Zrušit" onPress={() => setScanning(false)} />
+              <Button
+                mode="outlined"
+                style={{ marginTop: 12 }}
+                onPress={() => setScanning(false)}
+              >
+                Zrušit
+              </Button>
+            </View>
+          ) : (
+            <>
+              <FlatList
+                data={products}
+                refreshControl={
+                  <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                }
+                keyExtractor={(item) => String(item.id)}
+                contentContainerStyle={{ paddingBottom: 100 }}
+                ListEmptyComponent={
+                  <Text style={{ textAlign: "center", marginTop: 20 }}>
+                    Žádné produkty
+                  </Text>
+                }
+                renderItem={({ item }) => (
+                  <Card
+                    style={styles.card}
+                    onPress={() => handlePress({ item })}
+                  >
+                    <Card.Content style={styles.cardContent}>
+                      <View style={{ flex: 1 }}>
+                        <Title>Produkt ID: {item.id}</Title>
+                        <Paragraph>Počet: {item.count}</Paragraph>
+                      </View>
+                      <IconButton
+                        icon="delete-outline"
+                        size={24}
+                        iconColor="red"
+                        onPress={() => removeScannedCode(item.id)}
+                      />
+                    </Card.Content>
+                  </Card>
+                )}
+              />
+
+              <FAB.Group
+                open={open}
+                visible
+                icon={open ? "close" : "plus"}
+                actions={[
+                  { 
+                    icon: 'barcode-scan', 
+                    label: 'Naskenovat',
+                    onPress: () => startScan()
+                  },
+                  {
+                    icon: 'file-export',
+                    label: 'Exportovat',
+                    onPress: () => {
+                      const formattedData = formatDataForExport(products);
+                      exportToCSV(formattedData, `inventury_${date}`);
+                    }
+                  },
+                ]}
+                onStateChange={onStateChange}
+                style={styles.fab}
+              />
+              {/* <FAB
+                icon="barcode-scan"
+                label="Přidat produkt"
+                style={styles.fabScan}
+                onPress={startScan}
+              />
+              <FAB
+                icon="file-export"
+                label="Exportovat"
+                style={styles.fabExport}
+                onPress={() => {
+                  const formattedData = formatDataForExport(products);
+                  exportToCSV(formattedData, `inventury_${date}`);
+                }}
+              /> */}
             </>
           )}
-        </View>
-        <FlatList
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-          data={products}
-          keyExtractor={(item) => String(item.id)}
-          renderItem={({ item }) => (
-            <TouchableRipple
-              style={styles.listItem}
-              onPress={() => handlePress({ item })}
-            >
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                }}
-              >
-                <View style={{ flex: 1, justifyContent: "center" }}>
-                  <Text>ID: {item.id}</Text>
-                </View>
-                <View style={{ flex: 1, justifyContent: "center" }}>
-                  <Text>Počet: {item.count}</Text>
-                </View>
-                <IconButton
-                  icon="delete-empty"
-                  size={20}
-                  iconColor="red"
-                  onPress={() => removeScannedCode(item.id)}
-                />
-              </View>
-            </TouchableRipple>
-          )}
-        />
-        <IconButton
-          icon="file-export"
-          size={70}
-          onPress={() => {
-            const formattedData = formatDataForExport(products);
-            exportToCSV(formattedData, `inventury_${date}`);
-          }}
-          style={styles.createInventoryButtton}
-        />
-    </SafeAreaView>
+        </SafeAreaView>
+      </Portal>
+    </PaperProvider>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    paddingHorizontal: 16,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   scanningText: {
     marginTop: 10,
     textAlign: "center",
   },
-  listItem: {
-    padding: 10,
-    borderTopWidth: 0.2,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
+  card: {
+    marginBottom: 12,
+    borderRadius: 12,
+    elevation: 2,
   },
-  createInventoryButtton: {
-    position: "absolute",
-    padding: 5,
-    bottom: 50,
-    right: "45%",
-  },
-  cameraContainer: {
-    height: "50%",
-    justifyContent: "center",
+  cardContent: {
+    flexDirection: "row",
     alignItems: "center",
   },
-  camera: {
+  fabScan: {
+    position: "absolute",
+    right: 20,
+    bottom: 90,
+  },
+  fabExport: {
+    position: "absolute",
+    right: 20,
+    bottom: 20,
+    backgroundColor: "#4CAF50",
+  },
+  cameraOverlay: {
     flex: 1,
+    alignItems: "center",
+    paddingTop: 20,
+  },
+  camera: {
+    width: "90%",
     aspectRatio: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     overflow: "hidden",
   },
   message: {
     textAlign: "center",
-    paddingBottom: 10,
+    marginBottom: 10,
   },
 });

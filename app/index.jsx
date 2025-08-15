@@ -2,7 +2,15 @@ import { useCameraPermissions } from "expo-camera";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
-import { IconButton, Button, Text, TouchableRipple } from "react-native-paper";
+import {
+  IconButton,
+  Button,
+  Text,
+  Card,
+  Title,
+  Paragraph,
+  FAB,
+} from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   getInventories,
@@ -35,11 +43,11 @@ export default function HomeScreen() {
       setInventories(data);
     };
     fetchInventories();
-  });
+  }, []);
 
   if (!permission) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <View style={styles.centered}>
         <Text>Loading camera permission...</Text>
       </View>
     );
@@ -47,69 +55,64 @@ export default function HomeScreen() {
 
   if (!permission.granted) {
     return (
-      <SafeAreaView style={{ flex: 1 }}>
+      <SafeAreaView style={styles.container}>
         <Text style={styles.message}>
           We need your permission to show the camera
         </Text>
-        <Button onPress={requestPermission}>grant permission</Button>
+        <Button mode="contained" onPress={requestPermission}>
+          Grant Permission
+        </Button>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={{ marginTop: 20 }}>
+      <ScrollView style={{ marginTop: 20 }} contentContainerStyle={{ paddingBottom: 100 }}>
         {Object.keys(inventories).length === 0 ? (
-          <Text style={{textAlign: "center"}}>Žádné inventury</Text>
+          <Text style={{ textAlign: "center", marginTop: 20 }}>
+            Žádné inventury
+          </Text>
         ) : (
           Object.entries(inventories).map(([date, products]) => (
-            <TouchableRipple
-              style={styles.listItem}
+            <Card
+              key={date}
+              style={styles.card}
               onPress={() =>
                 router.push({ pathname: "/inventory", params: { date } })
               }
-              key={date}
             >
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                }}
-              >
-                <View style={{ flex: 1, justifyContent: "center" }}>
-                  <Text>{date}</Text>
+              <Card.Content style={styles.cardContent}>
+                <View style={{ flex: 1 }}>
+                  <Title>{date}</Title>
+                  <Paragraph>Počet produktů: {products.length}</Paragraph>
                 </View>
-                <View style={{ flex: 1, justifyContent: "center" }}>
-                  <Text>Pocet: {products.length}</Text>
-                </View>
-                <>
-                  <IconButton
-                    icon="delete-empty"
-                    size={20}
-                    iconColor="red"
-                    onPress={() =>
-                      deleteInventory(date).then(() => {
-                        setInventories((prev) => {
-                          const newInventories = { ...prev };
-                          delete newInventories[date];
-                          return newInventories;
-                        });
-                      })
-                    }
-                  />
-                </>
-              </View>
-            </TouchableRipple>
+                <IconButton
+                  icon="delete-outline"
+                  size={24}
+                  iconColor="red"
+                  onPress={() =>
+                    deleteInventory(date).then(() => {
+                      setInventories((prev) => {
+                        const newInventories = { ...prev };
+                        delete newInventories[date];
+                        return newInventories;
+                      });
+                    })
+                  }
+                />
+              </Card.Content>
+            </Card>
           ))
         )}
       </ScrollView>
-      <Button
-        mode="contained"
-        style={styles.createInventoryButtton}
+
+      <FAB
+        icon="plus"
+        label="Přidat inventuru"
+        style={styles.fab}
         onPress={handleAddInventory}
-      >
-        Přidat inventuru
-      </Button>
+      />
     </SafeAreaView>
   );
 }
@@ -117,23 +120,29 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    paddingHorizontal: 16,
   },
-  listItem: {
-    padding: 10,
-    borderTopWidth: 0.2,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   message: {
     textAlign: "center",
-    paddingBottom: 10,
+    marginBottom: 10,
   },
-  createInventoryButtton: {
+  card: {
+    marginBottom: 12,
+    borderRadius: 12,
+    elevation: 2,
+  },
+  cardContent: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  fab: {
     position: "absolute",
-    padding: 5,
-    bottom: 50,
-    left: 30,
-    right: 30,
-  }
+    right: 20,
+    bottom: 20,
+  },
 });
