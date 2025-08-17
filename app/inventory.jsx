@@ -1,263 +1,393 @@
-import { CameraView, useCameraPermissions } from "expo-camera";
-import { useRouter, useGlobalSearchParams, Stack } from "expo-router";
-import { useEffect, useRef, useState, useContext } from "react";
-import { FlatList, StyleSheet, View } from "react-native";
+import {CameraView, useCameraPermissions} from "expo-camera";
+import {useRouter, useGlobalSearchParams, Stack} from "expo-router";
+import {useEffect, useRef, useState, useContext} from "react";
+import {Animated, StyleSheet, View, ScrollView, Alert} from "react-native";
 import {
-  IconButton,
-  Text,
-  Button,
-  Card,
-  Title,
-  Paragraph,
-  FAB,
-  Portal,
-  PaperProvider
+    IconButton,
+    Text,
+    Button,
+    TextInput,
+    Divider,
+    TouchableRipple,
+    Menu, Snackbar,
 } from "react-native-paper";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { getProducts, addProduct, deleteProduct } from "../utils/products";
-import { GlobalContext } from "@/context/GlobalProvider";
-import { RefreshControl } from "react-native";
-import { exportToCSV, formatDataForExport } from "@/utils/export";
+import {getProducts, addProduct, deleteProduct, updateProductCount} from "@/utils/products";
+import {deleteInventory} from "@/utils/inventory";
+import {GlobalContext} from "@/context/GlobalProvider";
+import {RefreshControl} from "react-native";
+import {exportToCSV, formatDataForExport} from "@/utils/export";
+import {MenuComponent} from "@/components/Menu";
 
 export default function InventoryScreen() {
-  const [permission, requestPermission] = useCameraPermissions();
-  const [scanning, setScanning] = useState(false);
-  const [products, setProducts] = useState([]);
-  const [state, setState] = useState(false);
-  const scannedRef = useRef(false);
-  const router = useRouter();
-  const { refreshing, setRefreshing } = useContext(GlobalContext);
-  const { date } = useGlobalSearchParams();
+    const [permission, requestPermission] = useCameraPermissions();
+    const [scanning, setScanning] = useState(false);
+    const [products, setProducts] = useState([]);
+    const scannedRef = useRef(false);
+    const router = useRouter();
+    const {refreshing} = useContext(GlobalContext);
+    const {date} = useGlobalSearchParams();
+    const [visible, setVisible] = useState(null);
+    const [saved, setSaved] = useState(false);
+    const scaleAnimated = useRef(new Animated.Value(1)).current;
 
-  const onStateChange = ({ open }) => setState({ open });
+    const onToggleSnackBar = () => setSaved(!saved);
 
-  const { open } = state;
+    const onDissmissSnackBar = () => setSaved(false);
 
-  const fetchProducts = async () => {
-    const data = await getProducts(date);
-    setProducts(data);
-  };
+    // Use strings for TextInputs to avoid toString() on undefined/null
+    const [idProduct, setIdProduct] = useState("");
+    const [count, setCount] = useState("");
 
-  const onRefresh = () => {
-    fetchProducts();
-  };
+    // Track last saved values to detect unsaved changes
+    const [lastSaved, setLastSaved] = useState({id: "", count: ""});
+    const isDirty = idProduct !== lastSaved.id || count !== lastSaved.count;
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
+    const fetchProducts = async () => {
+        const data = await getProducts(date);
+        setProducts(data);
+    };
 
-  const handleBarCodeScanned = async ({ data }) => {
-    if (scannedRef.current) return;
-    scannedRef.current = true;
+    const onRefresh = () => {
+        fetchProducts();
+    };
 
-    try {
-      const updatedProducts = await addProduct(date, data);
-      setProducts(updatedProducts);
-    } catch (error) {
-      console.error("Chyba při přidávání produktu:", error);
-    }
-    setScanning(false);
-  };
+    useEffect(() => {
+        fetchProducts();
+    }, []);
 
-  const handlePress = ({ item }) => {
-    if (!scanning) {
-      router.push({
-        pathname: "/product",
-        params: { id: item.id, date },
-      });
-    }
-  };
+    const saveManual = async () => {
+        const idNum = Number(idProduct);
+        const countNum = Number(count || "1");
+        if (!Number.isFinite(idNum) || idNum <= 0 || !Number.isFinite(countNum) || countNum <= 0) {
+            alert("Zadejte platné ID a počet větší než 0.");
+            return false;
+        }
+        try {
+            Animated.sequence([
+                Animated.timing(scaleAnimated, {
+                    toValue: 0.9,
+                    duration: 200,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(scaleAnimated, {
+                    toValue: 1,
+                    duration: 200,
+                    useNativeDriver: true,
+                }),
+            ]).start();
+            setSaved(true);
 
-  const startScan = () => {
-    scannedRef.current = false;
-    setScanning(true);
-  };
+            const updatedProducts = await updateProductCount(date, idNum, countNum).then(() => {
+                setLastSaved({id: String(idNum), count: String(countNum)});
+                onToggleSnackBar()
+                return getProducts(date);
+            });
+            setProducts(updatedProducts);
+            setTimeout(() => {
+                setSaved(false)
+            }, 2500)
+            return true;
+        } catch (error) {
+            console.error("Chyba při přidávání produktu:", error);
+            alert(error.message);
+            return false;
+        }
+    };
 
-  const removeScannedCode = async (productId) => {
-    try {
-      const updatedProducts = await deleteProduct(date, productId);
-      setProducts(updatedProducts);
-    } catch (error) {
-      console.error("Chyba při mazání produktu:", error);
-    }
-  };
+    const handleBarCodeScanned = async ({data}) => {
+        if (scannedRef.current) return;
+        scannedRef.current = true;
+        try {
+            const scannedId = Number(data);
+            const scannedCount = 1;
 
-  if (!permission) {
-    return (
-      <View style={styles.centered}>
-        <Text>Loading camera permission...</Text>
-      </View>
-    );
-  }
+            // Save scanned values into inputs so the user can see/edit them
+            setIdProduct(String(scannedId));
+            setCount(String(scannedCount));
 
-  if (!permission.granted) {
-    return (
-      <View style={styles.centered}>
-        <Text style={styles.message}>
-          We need your permission to show the camera
-        </Text>
-        <Button mode="contained" onPress={requestPermission}>
-          Grant Permission
-        </Button>
-      </View>
-    );
-  }
+            // Persist the product
+            const updatedProducts = await addProduct(date, scannedId, scannedCount);
+            setProducts(updatedProducts);
 
-  return (
-    <PaperProvider>
-      <Portal>
-        <SafeAreaView style={styles.container}>
-          <Stack.Screen
-            options={{
-              title: date ? `Inventura: ${date}` : "Inventury",
-            }}
-          />
+            // Mark inputs as clean with these saved values
+            setLastSaved({id: String(scannedId), count: String(scannedCount)});
+        } catch (error) {
+            console.error("Chyba při přidávání produktu:", error);
+            alert(error.message);
+        } finally {
+            setScanning(false);
+        }
+    };
 
-          {/* Scanning overlay */}
-          {scanning ? (
-            <View style={styles.cameraOverlay}>
-              <CameraView
-                style={styles.camera}
-                onBarcodeScanned={handleBarCodeScanned}
-              />
-              <Text style={styles.scanningText}>
-                Namiřte fotoaparát na čárový kód...
-              </Text>
-              <Button
-                mode="outlined"
-                style={{ marginTop: 12 }}
-                onPress={() => setScanning(false)}
-              >
-                Zrušit
-              </Button>
+    const handlePress = ({item}) => {
+        if (!scanning) {
+            router.push({
+                pathname: "/product",
+                params: {id: item.id, date},
+            });
+        }
+    };
+
+    // Start scan but block if there are unsaved changes
+    const startScan = () => {
+        if (isDirty) {
+            Alert.alert(
+                "Neuložené změny",
+                "Vstupní pole byla změněna. Chcete změny uložit nebo zahodit před skenováním?",
+                [
+                    {
+                        text: "Uložit",
+                        onPress: async () => {
+                            const ok = await saveManual();
+                            if (ok) {
+                                scannedRef.current = false;
+                                setScanning(true);
+                            }
+                        },
+                    },
+                    {
+                        text: "Zahodit",
+                        style: "destructive",
+                        onPress: () => {
+                            // Revert inputs to last saved values
+                            setIdProduct(lastSaved.id);
+                            setCount(lastSaved.count);
+                            scannedRef.current = false;
+                            setScanning(true);
+                        },
+                    },
+                    {text: "Zrušit", style: "cancel"},
+                ]
+            );
+            return;
+        }
+
+        scannedRef.current = false;
+        setScanning(true);
+    };
+
+    const removeScannedCode = async (productId) => {
+        try {
+            const updatedProducts = await deleteProduct(date, productId);
+            setProducts(updatedProducts);
+        } catch (error) {
+            console.error("Chyba při mazání produktu:", error);
+        }
+    };
+
+    if (!permission) {
+        return (
+            <View style={styles.centered}>
+                <Text>Loading camera permission...</Text>
             </View>
-          ) : (
-            <>
-              <FlatList
-                data={products}
-                refreshControl={
-                  <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-                }
-                keyExtractor={(item) => String(item.id)}
-                contentContainerStyle={{ paddingBottom: 100 }}
-                ListEmptyComponent={
-                  <Text style={{ textAlign: "center", marginTop: 20 }}>
-                    Žádné produkty
-                  </Text>
-                }
-                renderItem={({ item }) => (
-                  <Card
-                    style={styles.card}
-                    onPress={() => handlePress({ item })}
-                  >
-                    <Card.Content style={styles.cardContent}>
-                      <View style={{ flex: 1 }}>
-                        <Title>Produkt ID: {item.id}</Title>
-                        <Paragraph>Počet: {item.count}</Paragraph>
-                      </View>
-                      <IconButton
-                        icon="delete-outline"
-                        size={24}
-                        iconColor="red"
-                        onPress={() => removeScannedCode(item.id)}
-                      />
-                    </Card.Content>
-                  </Card>
-                )}
-              />
+        );
+    }
 
-              <FAB.Group
-                open={open}
-                visible
-                icon={open ? "close" : "plus"}
-                actions={[
-                  { 
-                    icon: 'barcode-scan', 
-                    label: 'Naskenovat',
-                    onPress: () => startScan()
-                  },
-                  {
-                    icon: 'file-export',
-                    label: 'Exportovat',
-                    onPress: () => {
-                      const formattedData = formatDataForExport(products);
-                      exportToCSV(formattedData, `inventury_${date}`);
-                    }
-                  },
-                ]}
-                onStateChange={onStateChange}
-                style={styles.fab}
-              />
-              {/* <FAB
-                icon="barcode-scan"
-                label="Přidat produkt"
-                style={styles.fabScan}
-                onPress={startScan}
-              />
-              <FAB
-                icon="file-export"
-                label="Exportovat"
-                style={styles.fabExport}
-                onPress={() => {
-                  const formattedData = formatDataForExport(products);
-                  exportToCSV(formattedData, `inventury_${date}`);
+    if (!permission.granted) {
+        return (
+            <View style={styles.centered}>
+                <Text style={styles.message}>
+                    We need your permission to show the camera
+                </Text>
+                <Button mode="contained" onPress={requestPermission}>
+                    Grant Permission
+                </Button>
+            </View>
+        );
+    }
+
+    return (
+        <>
+            <Stack.Screen
+                name="inventory"
+                options={{
+                    title: "Inventory",
+                    headerShown: true,
+                    headerRight: () => (
+                        <MenuComponent
+                            date={date}
+                            visible={visible}
+                            setVisible={setVisible}
+                            handleDelete={() => {
+                                deleteInventory(date)
+                                    .then(() => {
+                                        router.push("/home");
+                                    })
+                                    .catch((error) => {
+                                        console.error("Chyba při mazání inventury:", error);
+                                        alert(error.message);
+                                    });
+                            }}
+                        />
+                    ),
                 }}
-              /> */}
-            </>
-          )}
-        </SafeAreaView>
-      </Portal>
-    </PaperProvider>
-  );
+            />
+            <ScrollView
+                contentContainerStyle={styles.container}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh}/>
+                }
+            >
+                {scanning ? (
+                    <View style={styles.cameraOverlay}>
+                        <CameraView
+                            style={styles.camera}
+                            onBarcodeScanned={handleBarCodeScanned}
+                        />
+                        <Text style={styles.scanningText}>
+                            Namiřte fotoaparát na čárový kód...
+                        </Text>
+                        <Button
+                            mode="outlined"
+                            style={{marginTop: 12}}
+                            onPress={() => setScanning(false)}
+                        >
+                            Zrušit
+                        </Button>
+                    </View>
+                ) : (
+                    <IconButton
+                        icon="magnify-scan"
+                        mode="contained"
+                        size={250}
+                        onPress={startScan}
+                        disabled={false} // guard is handled by startScan
+                        style={{borderRadius: 25, alignSelf: "center", marginTop: -20}}
+                    />
+                )}
+                <View style={styles.input.inputView}>
+                    <TextInput
+                        label="ID produktu"
+                        mode="outlined"
+                        keyboardType="numeric"
+                        value={idProduct}
+                        onChangeText={setIdProduct}
+                        style={styles.input.input}
+                    />
+                    <TextInput
+                        label="Počet kusů"
+                        mode="outlined"
+                        keyboardType="numeric"
+                        value={count}
+                        onChangeText={setCount}
+                        style={styles.input.input}
+                    />
+                    <Animated.View style={[{transform: [{scale: scaleAnimated}]}, styles.input.saveButton]}>
+                        <IconButton
+                            icon={saved ? "check" : "content-save-outline"}
+                            iconColor={saved ? "green" : "white"}
+                            size={30}
+                            mode="contained"
+                            onPress={() => {
+                                void saveManual();
+                            }}
+                            style={{borderRadius: 8}}
+                        />
+                    </Animated.View>
+                </View>
+                {products.length === 0 && (
+                    <Text style={{textAlign: "center", marginTop: 20}}>
+                        Žádné produkty
+                    </Text>
+                )}
+                {products.map((item) => (
+                    <View key={item.id}>
+                        <Divider/>
+                        <TouchableRipple
+                            style={styles.card}
+                            onPress={() => handlePress({item})}
+                        >
+                            <>
+                                <Text style={{fontSize: 18}}>{item.id}</Text>
+                                <Text style={{fontSize: 16}}>Počet: {item.count || 0}</Text>
+                                <Menu
+                                    style={{marginTop: -50}}
+                                    visible={visible === item.id}
+                                    onDismiss={() => setVisible(null)}
+                                    anchor={
+                                        <IconButton
+                                            icon="dots-vertical"
+                                            size={24}
+                                            onPress={() => setVisible(item.id)}
+                                        />
+                                    }
+                                >
+                                    <Menu.Item
+                                        title="Editovat produkt"
+                                        leadingIcon="file-edit"
+                                        onPress={() => {
+                                        }}
+                                    />
+                                    <Divider/>
+                                    <Menu.Item
+                                        title="Smazat produkt"
+                                        leadingIcon="delete"
+                                        onPress={() => {
+                                            removeScannedCode(item.id);
+                                            setVisible(null);
+                                        }}
+                                    />
+                                </Menu>
+                            </>
+                        </TouchableRipple>
+                    </View>
+                ))}
+            </ScrollView>
+            <Snackbar
+                visible={saved}
+                onDismiss={onDissmissSnackBar}
+            >
+                Produkt byl úspěšně uložen
+            </Snackbar>
+        </>
+    );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-  centered: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  scanningText: {
-    marginTop: 10,
-    textAlign: "center",
-  },
-  card: {
-    marginBottom: 12,
-    borderRadius: 12,
-    elevation: 2,
-  },
-  cardContent: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  fabScan: {
-    position: "absolute",
-    right: 20,
-    bottom: 90,
-  },
-  fabExport: {
-    position: "absolute",
-    right: 20,
-    bottom: 20,
-    backgroundColor: "#4CAF50",
-  },
-  cameraOverlay: {
-    flex: 1,
-    alignItems: "center",
-    paddingTop: 20,
-  },
-  camera: {
-    width: "90%",
-    aspectRatio: 1,
-    borderRadius: 12,
-    overflow: "hidden",
-  },
-  message: {
-    textAlign: "center",
-    marginBottom: 10,
-  },
+    container: {
+        marginTop: 50,
+        paddingBottom: 20,
+        paddingHorizontal: 20
+    },
+    centered: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    scanningText: {
+        marginTop: 10,
+        textAlign: "center",
+    },
+    card: {
+        height: 70,
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+    },
+    input: {
+        inputView: {
+            flexDirection: "row",
+            justifyContent: "space-between",
+            marginVertical: 15,
+        },
+        input: {
+            width: "40%",
+        },
+        saveButton: {
+            width: "15%",
+            alignItems: "center",
+        },
+    },
+    cameraOverlay: {
+        alignItems: "center",
+        paddingBottom: 20,
+    },
+    camera: {
+        width: "75%",
+        aspectRatio: 1,
+    },
+    message: {
+        textAlign: "center",
+        marginBottom: 10,
+    },
 });

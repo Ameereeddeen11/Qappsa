@@ -17,7 +17,6 @@ export const addInventory = async (date) => {
     const inventories = await getInventories();
 
     if (inventories[date]) {
-      throw new Error(`Inventura pro datum ${date} už existuje.`);
     }
 
     inventories[date] = [];
