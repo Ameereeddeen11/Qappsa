@@ -1,6 +1,6 @@
 import {CameraView, useCameraPermissions} from "expo-camera";
 import {useRouter, useGlobalSearchParams, Stack} from "expo-router";
-import {useEffect, useRef, useState, useContext} from "react";
+import {useEffect, useRef, useState, useContext, useCallback} from "react";
 import {Animated, StyleSheet, View, ScrollView, Alert} from "react-native";
 import {
     IconButton,
@@ -9,14 +9,16 @@ import {
     TextInput,
     Divider,
     TouchableRipple,
-    Menu, Snackbar,
+    Menu, Snackbar, Portal, Modal,
 } from "react-native-paper";
 import {getProducts, addProduct, deleteProduct, updateProductCount} from "@/utils/products";
 import {deleteInventory} from "@/utils/inventory";
 import {GlobalContext} from "@/context/GlobalProvider";
 import {RefreshControl} from "react-native";
 import {exportToCSV, formatDataForExport} from "@/utils/export";
-import {MenuComponent} from "@/components/Menu";
+import {MenuComponent, ProductMenuComponent} from "@/components/Menu";
+import {ModalCard} from "@/components/ModalCard";
+import {useFocusEffect} from "@react-navigation/native";
 
 export default function InventoryScreen() {
     const [permission, requestPermission] = useCameraPermissions();
@@ -37,10 +39,21 @@ export default function InventoryScreen() {
     // Use strings for TextInputs to avoid toString() on undefined/null
     const [idProduct, setIdProduct] = useState("");
     const [count, setCount] = useState("");
+    const [openedForEdit, setOpenedForEdit] = useState('');
 
     // Track last saved values to detect unsaved changes
     const [lastSaved, setLastSaved] = useState({id: "", count: ""});
     const isDirty = idProduct !== lastSaved.id || count !== lastSaved.count;
+
+    const [modal, setModal] = useState(false);
+    const showModal = (id) => {
+        setModal(true);
+        setOpenedForEdit(id);
+    };
+    const hideModal = () => {
+        setModal(false);
+        setOpenedForEdit('');
+    };
 
     const fetchProducts = async () => {
         const data = await getProducts(date);
@@ -54,6 +67,18 @@ export default function InventoryScreen() {
     useEffect(() => {
         fetchProducts();
     }, []);
+
+    useFocusEffect(
+        useCallback(() => {
+            // Reset vstupů a stavu při každém vstupu na obrazovku (nebo při změně date)
+            setIdProduct("");
+            setCount("");
+            setLastSaved({id: "", count: ""});
+            scannedRef.current = false;
+            setScanning(false);
+            return () => {};
+        }, [date])
+    );
 
     const saveManual = async () => {
         const idNum = Number(idProduct);
@@ -99,18 +124,26 @@ export default function InventoryScreen() {
         scannedRef.current = true;
         try {
             const scannedId = Number(data);
-            const scannedCount = 1;
+            if (!Number.isFinite(scannedId) || scannedId <= 0) {
+                throw new Error("Nesprávný formát čárového kódu.");
+            }
 
-            // Save scanned values into inputs so the user can see/edit them
+            // Zobraz ID v poli
             setIdProduct(String(scannedId));
-            setCount(String(scannedCount));
 
-            // Persist the product
-            const updatedProducts = await addProduct(date, scannedId, scannedCount);
+            // Přidej/incrementuj produkt a získej aktualizovaný seznam
+            const updatedProducts = await addProduct(date, scannedId);
             setProducts(updatedProducts);
 
-            // Mark inputs as clean with these saved values
-            setLastSaved({id: String(scannedId), count: String(scannedCount)});
+            // Najdi aktuální count naskenovaného produktu a propsat do TextInput "Počet kusů"
+            const found = Array.isArray(updatedProducts)
+                ? updatedProducts.find(p => String(p.id) === String(scannedId))
+                : null;
+            const currentCount = found?.count ?? 1;
+            setCount(String(currentCount));
+
+            // Ulož poslední hodnoty jako "saved"
+            setLastSaved({id: String(scannedId), count: String(currentCount)});
         } catch (error) {
             console.error("Chyba při přidávání produktu:", error);
             alert(error.message);
@@ -208,26 +241,25 @@ export default function InventoryScreen() {
                             date={date}
                             visible={visible}
                             setVisible={setVisible}
-                            handleDelete={() => {
-                                deleteInventory(date)
-                                    .then(() => {
-                                        router.push("/home");
-                                    })
-                                    .catch((error) => {
-                                        console.error("Chyba při mazání inventury:", error);
-                                        alert(error.message);
-                                    });
-                            }}
                         />
                     ),
                 }}
             />
             <ScrollView
                 contentContainerStyle={styles.container}
-                refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh}/>
-                }
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh}/>}
             >
+                <Portal>
+                    <Modal visible={modal} onDismiss={hideModal}>
+                        <ModalCard
+                            id={openedForEdit}
+                            date={date}
+                            countDynamic={count}
+                            setCountDynamic={setCount}
+                            onRefresh={onRefresh}
+                        />
+                    </Modal>
+                </Portal>
                 {scanning ? (
                     <View style={styles.cameraOverlay}>
                         <CameraView
@@ -251,7 +283,7 @@ export default function InventoryScreen() {
                         mode="contained"
                         size={250}
                         onPress={startScan}
-                        disabled={false} // guard is handled by startScan
+                        disabled={false}
                         style={{borderRadius: 25, alignSelf: "center", marginTop: -20}}
                     />
                 )}
@@ -295,7 +327,7 @@ export default function InventoryScreen() {
                         <Divider/>
                         <TouchableRipple
                             style={styles.card}
-                            onPress={() => handlePress({item})}
+                            onPress={() => showModal(item.id)}
                         >
                             <>
                                 <Text style={{fontSize: 18}}>{item.id}</Text>
@@ -316,6 +348,11 @@ export default function InventoryScreen() {
                                         title="Editovat produkt"
                                         leadingIcon="file-edit"
                                         onPress={() => {
+                                            setIdProduct(item.id);
+                                            setCount(item.count);
+                                            setOpenedForEdit(item.id);
+                                            setModal(true);
+                                            setVisible(null);
                                         }}
                                     />
                                     <Divider/>

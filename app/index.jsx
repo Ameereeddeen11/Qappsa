@@ -26,9 +26,9 @@ export default function HomeScreen() {
     const handleAddInventory = () => {
         const date = new Date().toISOString().split("T")[0];
         addInventory(date)
-            .then((inventories) => {
+            .then(({inventories, id}) => {
                 setInventories(inventories);
-                router.push({pathname: "/inventory", params: {date}});
+                router.push({pathname: "/inventory", params: {date: id}});
             })
             .catch((error) => {
                 console.error("Chyba při přidávání inventury:", error);
@@ -89,7 +89,6 @@ export default function HomeScreen() {
                 ) : (
                     Object.entries(inventories).map(([date, products]) => (
                         <View key={date}>
-                            {/* <Divider /> */}
                             <TouchableRipple
                                 style={styles.card}
                                 onPress={() =>
@@ -98,7 +97,7 @@ export default function HomeScreen() {
                             >
                                 <>
                                     <Text variant="titleMedium">{date}</Text>
-                                    <Text variant="titleMedium">{products.length}</Text>
+                                    <Text variant="titleMedium">{products.length || 0}</Text>
                                     <Menu
                                         visible={visible === date}
                                         onDismiss={() => setVisible(null)}
@@ -165,49 +164,6 @@ export default function HomeScreen() {
                             </TouchableRipple>
                         </View>
                     ))
-
-                    // Object.entries(inventories).map(([date, products]) => (
-                    //   <View key={date}>
-                    //     <Divider/>
-                    //     <TouchableRipple style={styles.card} onPress={() => handlePress({ item })}>
-                    //       <>
-                    //         <Text style={{ fontSize: 18 }}>
-                    //           {date}
-                    //         </Text>
-                    //         <Text style={{ fontSize: 16 }}>
-                    //           Počet: {products || 0}
-                    //         </Text>
-                    //         <Menu
-                    //           style={{ marginTop: -50 }}
-                    //           visible={visible === date}
-                    //           onDismiss={() => setVisible(null)}
-                    //           anchor={
-                    //             <IconButton
-                    //               icon="dots-vertical"
-                    //               size={24}
-                    //               onPress={() => setVisible(item.id)}
-                    //             />
-                    //           }
-                    //         >
-                    //           <Menu.Item
-                    //             title="Detail produktu"
-                    //             leadingIcon="file-edit"
-                    //             onPress={() => {}}
-                    //           />
-                    //           <Divider />
-                    //           <Menu.Item
-                    //             title="Smazat produkt"
-                    //             leadingIcon="delete"
-                    //             onPress={() => {
-                    //               removeScannedCode(item.id);
-                    //               setVisible(null);
-                    //             }}
-                    //           />
-                    //         </Menu>
-                    //       </>
-                    //     </TouchableRipple>
-                    //   </View>
-                    // ))
                 )}
                 <Divider/>
             </ScrollView>

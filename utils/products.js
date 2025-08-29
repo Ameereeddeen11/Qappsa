@@ -55,7 +55,6 @@ export const addProduct = async (date, productId) => {
         inventories[date] = products;
         await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(inventories));
         return inventories[date];
-
     } catch (err) {
         console.error("addProduct error", err);
         throw err;
