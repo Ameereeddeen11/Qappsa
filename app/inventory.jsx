@@ -26,8 +26,8 @@ export default function InventoryScreen() {
     const [products, setProducts] = useState([]);
     const scannedRef = useRef(false);
     const router = useRouter();
-    const {refreshing} = useContext(GlobalContext);
-    const {date} = useGlobalSearchParams();
+    const {refreshing, setRefreshing} = useContext(GlobalContext);
+    const {id, date} = useGlobalSearchParams();
     const [visible, setVisible] = useState(null);
     const [saved, setSaved] = useState(false);
     const scaleAnimated = useRef(new Animated.Value(1)).current;
@@ -56,12 +56,13 @@ export default function InventoryScreen() {
     };
 
     const fetchProducts = async () => {
-        const data = await getProducts(date);
+        const data = await getProducts(id);
         setProducts(data);
     };
 
     const onRefresh = () => {
-        fetchProducts();
+        setRefreshing(true);
+        fetchProducts().then(() => setRefreshing(false));
     };
 
     useEffect(() => {
@@ -70,14 +71,13 @@ export default function InventoryScreen() {
 
     useFocusEffect(
         useCallback(() => {
-            // Reset vstupů a stavu při každém vstupu na obrazovku (nebo při změně date)
             setIdProduct("");
             setCount("");
             setLastSaved({id: "", count: ""});
             scannedRef.current = false;
             setScanning(false);
             return () => {};
-        }, [date])
+        }, [id])
     );
 
     const saveManual = async () => {
@@ -102,10 +102,10 @@ export default function InventoryScreen() {
             ]).start();
             setSaved(true);
 
-            const updatedProducts = await updateProductCount(date, idNum, countNum).then(() => {
+            const updatedProducts = await updateProductCount(id, idNum, countNum).then(() => {
                 setLastSaved({id: String(idNum), count: String(countNum)});
                 onToggleSnackBar()
-                return getProducts(date);
+                return getProducts(id);
             });
             setProducts(updatedProducts);
             setTimeout(() => {
@@ -132,7 +132,7 @@ export default function InventoryScreen() {
             setIdProduct(String(scannedId));
 
             // Přidej/incrementuj produkt a získej aktualizovaný seznam
-            const updatedProducts = await addProduct(date, scannedId);
+            const updatedProducts = await addProduct(id, scannedId);
             setProducts(updatedProducts);
 
             // Najdi aktuální count naskenovaného produktu a propsat do TextInput "Počet kusů"
@@ -149,15 +149,6 @@ export default function InventoryScreen() {
             alert(error.message);
         } finally {
             setScanning(false);
-        }
-    };
-
-    const handlePress = ({item}) => {
-        if (!scanning) {
-            router.push({
-                pathname: "/product",
-                params: {id: item.id, date},
-            });
         }
     };
 
@@ -201,7 +192,7 @@ export default function InventoryScreen() {
 
     const removeScannedCode = async (productId) => {
         try {
-            const updatedProducts = await deleteProduct(date, productId);
+            const updatedProducts = await deleteProduct(id, productId);
             setProducts(updatedProducts);
         } catch (error) {
             console.error("Chyba při mazání produktu:", error);
@@ -234,13 +225,19 @@ export default function InventoryScreen() {
             <Stack.Screen
                 name="inventory"
                 options={{
-                    title: "Inventory",
+                    title: date,
                     headerShown: true,
                     headerRight: () => (
                         <MenuComponent
                             date={date}
                             visible={visible}
                             setVisible={setVisible}
+                            deleteAction={() => {
+                                void deleteInventory(id).then(() => {
+                                    router.back();
+                                    setVisible(null);
+                                })
+                            }}
                         />
                     ),
                 }}
@@ -253,10 +250,12 @@ export default function InventoryScreen() {
                     <Modal visible={modal} onDismiss={hideModal}>
                         <ModalCard
                             id={openedForEdit}
-                            date={date}
+                            setOpenedForEdit={setOpenedForEdit}
+                            date={id}
                             countDynamic={count}
                             setCountDynamic={setCount}
                             onRefresh={onRefresh}
+                            hideModel={hideModal}
                         />
                     </Modal>
                 </Portal>

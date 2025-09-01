@@ -1,10 +1,9 @@
-import {useState, useEffect} from "react";
+import {useEffect} from "react";
 import {StyleSheet} from "react-native";
-import {Card, Title, Text, Button, Divider, TextInput} from "react-native-paper";
+import {Card, Title, Button, Divider, TextInput} from "react-native-paper";
 import {deleteProduct, updateProductCount, getProductByID} from "../utils/products";
 
-export const ModalCard = ({id, date, countDynamic, setCountDynamic, onRefresh}) => {
-
+export const ModalCard = ({id, setOpenedForEdit, date, countDynamic, setCountDynamic, onRefresh, hideModel}) => {
     useEffect(() => {
         getProductByID(date, id).then((data) => {
             setCountDynamic(data.count);
@@ -21,6 +20,7 @@ export const ModalCard = ({id, date, countDynamic, setCountDynamic, onRefresh}) 
                     label="ID produktu"
                     mode="outlined"
                     value={id}
+                    onChangeText={setOpenedForEdit}
                     disabled
                     style={styles.input}
                 />
@@ -29,7 +29,7 @@ export const ModalCard = ({id, date, countDynamic, setCountDynamic, onRefresh}) 
                     label="Počet kusů"
                     mode="outlined"
                     keyboardType="numeric"
-                    value={countDynamic}
+                    value={countDynamic.toString()}
                     onChangeText={setCountDynamic}
                     style={styles.input}
                 />
@@ -38,7 +38,11 @@ export const ModalCard = ({id, date, countDynamic, setCountDynamic, onRefresh}) 
                     mode="contained"
                     onPress={() => {
                         updateProductCount(date, id, countDynamic)
-                            .then(onRefresh)
+                            .then(() => {
+                                onRefresh();
+                                hideModel();
+                                setCountDynamic('');
+                            })
                             .catch((error) => {
                                 console.error("Chyba při aktualizaci počtu produktu:", error);
                                 alert(error.message);

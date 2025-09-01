@@ -40,15 +40,13 @@ export const addInventory = async (name) => {
         const uniqueName = ensureUniqueName(inventories, baseName);
 
         inventories[id] = {
-            id,
             name: uniqueName,
-            createdAt,
+            createdAt: createdAt,
             products: []
         };
 
         await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(inventories));
-        // return inventories;
-        return {inventories, id};
+        return {inventories, id, name};
     } catch (error) {
         console.error("Chyba při přidávání inventury:", error);
         throw error;

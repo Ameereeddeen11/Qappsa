@@ -6,7 +6,7 @@ import {deleteInventory, getInventoryByDate} from "@/utils/inventory";
 
 const router = useRouter();
 
-export const MenuComponent = ({date, visible, setVisible}) => {
+export const MenuComponent = ({date, visible, setVisible, deleteAction}) => {
     return (
         <Menu
             visible={visible === date}
@@ -38,31 +38,11 @@ export const MenuComponent = ({date, visible, setVisible}) => {
                     setVisible(null);
                 }}
             />
-            <Menu.Item
-                title="Přidat produkt"
-                leadingIcon="plus"
-                onPress={() =>
-                    router.push({
-                        pathname: "/inventory",
-                        params: {date},
-                    })
-                }
-            />
             <Divider/>
             <Menu.Item
                 title="Smazat inventuru"
                 leadingIcon="delete"
-                onPress={() => {
-                    deleteInventory(date)
-                        .then(() => {
-                            router.back();
-                            setVisible(null);
-                        })
-                        .catch((error) => {
-                            console.error("Chyba při mazání inventury:", error);
-                            alert(error.message);
-                        });
-                }}
+                onPress={() => deleteAction()}
             />
         </Menu>
     );

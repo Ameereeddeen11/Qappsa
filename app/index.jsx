@@ -7,8 +7,7 @@ import {
     Button,
     Text,
     Divider,
-    TouchableRipple,
-    Menu
+    TouchableRipple
 } from "react-native-paper";
 import {SafeAreaView} from "react-native-safe-area-context";
 import {
@@ -16,6 +15,7 @@ import {
     addInventory,
     deleteInventory
 } from "../utils/inventory";
+import {MenuComponent} from "@/components/Menu";
 
 export default function HomeScreen() {
     const [permission, requestPermission] = useCameraPermissions();
@@ -26,9 +26,9 @@ export default function HomeScreen() {
     const handleAddInventory = () => {
         const date = new Date().toISOString().split("T")[0];
         addInventory(date)
-            .then(({inventories, id}) => {
+            .then(({inventories, id, name}) => {
                 setInventories(inventories);
-                router.push({pathname: "/inventory", params: {date: id}});
+                router.push({pathname: "/inventory", params: {id: id, date: name}});
             })
             .catch((error) => {
                 console.error("Chyba při přidávání inventury:", error);
@@ -87,79 +87,28 @@ export default function HomeScreen() {
                 {Object.keys(inventories).length === 0 ? (
                     <Text style={{textAlign: "center"}}>Žádné inventury</Text>
                 ) : (
-                    Object.entries(inventories).map(([date, products]) => (
-                        <View key={date}>
+                    Object.entries(inventories).map(([id, inv]) => (
+                        <View key={id}>
                             <TouchableRipple
                                 style={styles.card}
                                 onPress={() =>
-                                    router.push({pathname: "/inventory", params: {date}})
+                                    router.push({pathname: "/inventory", params: {id, date: inv.name}})
                                 }
                             >
                                 <>
-                                    <Text variant="titleMedium">{date}</Text>
-                                    <Text variant="titleMedium">{products.length || 0}</Text>
-                                    <Menu
-                                        visible={visible === date}
-                                        onDismiss={() => setVisible(null)}
-                                        anchor={
-                                            <IconButton
-                                                icon="dots-vertical"
-                                                size={24}
-                                                onPress={() => setVisible(date)}
-                                            />
-                                        }
-                                    >
-                                        <Menu.Item
-                                            title="Exportovat inventuru"
-                                            leadingIcon="file-export"
-                                            onPress={() =>
-                                                router.push({
-                                                    pathname: "/inventory",
-                                                    params: {date},
-                                                })
-                                            }
-                                        />
-                                        <Menu.Item
-                                            title="Editovat inventuru"
-                                            leadingIcon="file-edit"
-                                            onPress={() =>
-                                                router.push({
-                                                    pathname: "/inventory",
-                                                    params: {date},
-                                                })
-                                            }
-                                        />
-                                        <Menu.Item
-                                            title="Přidat produkt"
-                                            leadingIcon="plus"
-                                            onPress={() =>
-                                                router.push({
-                                                    pathname: "/inventory",
-                                                    params: {date},
-                                                })
-                                            }
-                                        />
-                                        <Divider/>
-                                        <Menu.Item
-                                            title="Smazat inventuru"
-                                            leadingIcon="delete"
-                                            onPress={() => {
-                                                deleteInventory(date)
-                                                    .then(() => {
-                                                        setInventories((prev) => {
-                                                            const newInventories = {...prev};
-                                                            delete newInventories[date];
-                                                            return newInventories;
-                                                        });
-                                                    })
-                                                    .catch((error) => {
-                                                        console.error("Chyba při mazání inventury:", error);
-                                                        alert(error.message);
-                                                    });
+                                    <Text variant="titleMedium">{inv?.name}</Text>
+                                    <Text variant="titleMedium">{inv?.products?.length || 0}</Text>
+                                    <MenuComponent
+                                        date={id}
+                                        visible={visible}
+                                        setVisible={setVisible}
+                                        deleteAction={() => {
+                                            void deleteInventory(id).then(() => {
                                                 setVisible(null);
-                                            }}
-                                        />
-                                    </Menu>
+                                                getInventories().then(setInventories);
+                                            })
+                                        }}
+                                    />
                                 </>
                             </TouchableRipple>
                         </View>
