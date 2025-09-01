@@ -1,6 +1,6 @@
 import {useCameraPermissions} from "expo-camera";
 import {Stack, useRouter} from "expo-router";
-import {useEffect, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 import {StyleSheet, View, RefreshControl, ScrollView} from "react-native";
 import {
     IconButton,
@@ -16,11 +16,13 @@ import {
     deleteInventory
 } from "../utils/inventory";
 import {MenuComponent} from "@/components/Menu";
+import {useFocusEffect} from "@react-navigation/native";
 
 export default function HomeScreen() {
     const [permission, requestPermission] = useCameraPermissions();
     const [inventories, setInventories] = useState([]);
     const [visible, setVisible] = useState(null);
+    const [refreshing, setRefreshing] = useState(false);
     const router = useRouter();
 
     const handleAddInventory = () => {
@@ -36,13 +38,20 @@ export default function HomeScreen() {
             });
     };
 
-    useEffect(() => {
-        const fetchInventories = async () => {
+    const fetchData = async () => {
+        try {
             const data = await getInventories();
             setInventories(data);
-        };
-        fetchInventories();
-    }, []);
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchData();
+        }, [])
+    );
 
     if (!permission) {
         return (
@@ -79,8 +88,8 @@ export default function HomeScreen() {
                 contentContainerStyle={styles.container}
                 refreshControl={
                     <RefreshControl
-                        refreshing={false}
-                        onRefresh={() => getInventories().then(setInventories)}
+                        refreshing={refreshing}
+                        onRefresh={fetchData}
                     />
                 }
             >

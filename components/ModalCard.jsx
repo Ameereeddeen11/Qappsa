@@ -1,11 +1,12 @@
 import {useEffect} from "react";
 import {StyleSheet} from "react-native";
 import {Card, Title, Button, Divider, TextInput} from "react-native-paper";
-import {deleteProduct, updateProductCount, getProductByID} from "../utils/products";
+import {updateProductCount, getProductByID} from "../utils/products";
 
-export const ModalCard = ({id, setOpenedForEdit, date, countDynamic, setCountDynamic, onRefresh, hideModel}) => {
+export const ModalCard = ({id, setOpenedForEdit, date, countDynamic, setCountDynamic, onRefresh, setModal}) => {
     useEffect(() => {
         getProductByID(date, id).then((data) => {
+            setOpenedForEdit(data.id);
             setCountDynamic(data.count);
         });
     }, []);
@@ -40,8 +41,9 @@ export const ModalCard = ({id, setOpenedForEdit, date, countDynamic, setCountDyn
                         updateProductCount(date, id, countDynamic)
                             .then(() => {
                                 onRefresh();
-                                hideModel();
+                                setOpenedForEdit('');
                                 setCountDynamic('');
+                                setModal(false);
                             })
                             .catch((error) => {
                                 console.error("Chyba při aktualizaci počtu produktu:", error);
@@ -54,26 +56,26 @@ export const ModalCard = ({id, setOpenedForEdit, date, countDynamic, setCountDyn
                     Uložit změny
                 </Button>
 
-                <Button
-                    mode="contained"
-                    buttonColor="#d32f2f"
-                    textColor="white"
-                    onPress={() =>
-                        deleteProduct({date, productId: id})
-                            .then(() => {
-                                console.log("Produkt smazán");
-                                // router.back();
-                            })
-                            .catch((error) => {
-                                console.error("Chyba při mazání produktu:", error);
-                                alert(error.message);
-                            })
-                    }
-                    style={styles.deleteButton}
-                    icon="delete"
-                >
-                    Smazat produkt
-                </Button>
+                {/*<Button*/}
+                {/*    mode="contained"*/}
+                {/*    buttonColor="#d32f2f"*/}
+                {/*    textColor="white"*/}
+                {/*    onPress={() =>*/}
+                {/*        deleteProduct({date, productId: id})*/}
+                {/*            .then(() => {*/}
+                {/*                console.log("Produkt smazán");*/}
+                {/*                // router.back();*/}
+                {/*            })*/}
+                {/*            .catch((error) => {*/}
+                {/*                console.error("Chyba při mazání produktu:", error);*/}
+                {/*                alert(error.message);*/}
+                {/*            })*/}
+                {/*    }*/}
+                {/*    style={styles.deleteButton}*/}
+                {/*    icon="delete"*/}
+                {/*>*/}
+                {/*    Smazat produkt*/}
+                {/*</Button>*/}
             </Card.Content>
         </Card>
     );
