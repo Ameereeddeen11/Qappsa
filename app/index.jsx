@@ -27,7 +27,9 @@ export default function HomeScreen() {
     // const router = useRouter();
 
     const handleAddInventory = () => {
-        const date = Date.now();
+        // const id = Date.now();
+        // const date =
+        const date = new Date().toISOString().split("T")[0];
         addInventory(date)
             .then(({inventories, id, name}) => {
                 setInventories(inventories);

@@ -85,9 +85,8 @@ export default function Inventory() {
     };
 
     useEffect(() => {
-        fetchProducts().then(
-            console.log(products)
-        );
+        fetchProducts()
+        console.log(products)
     }, []);
 
     useFocusEffect(
