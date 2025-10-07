@@ -1,98 +1,123 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { getInventories } from "./inventory";
+import {getInventories} from "./inventory";
 
 const STORAGE_KEY = "inventories";
 
-export const getProducts = async (date) => {
-  if (!date) return [];
-  try {
-    const inventories = await getInventories();
-    const products = inventories[date];
-    if (!Array.isArray(products)) return [];
-    return products;
-  } catch (err) {
-    console.error("getProducts error", err);
-    return [];
-  }
-};
-
-export const getProductByID = async (date, id) => {
-  if (!date && !id) return [];
-  try {
-    const inventories = await getInventories();
-    // console.log(inventories);
-    const allProducts = inventories[date];
-    // console.log(allProducts);
-    const product = allProducts.find(item => item.id === id);
-    return product;
-  } catch (err) {
-    console.error("getOneProduct", err);
-    return [];
-  }
-};
-
-export const addProduct = async (date, productId) => {
-  if (!date) throw new Error("Date is required");
-  try {
-    const inventories = await getInventories();
-
-    if (!inventories[date] || !Array.isArray(inventories[date])) {
-      inventories[date] = [];
+export const getProducts = async (inventoryId) => {
+    if (!inventoryId) return [];
+    try {
+        const inventories = await getInventories();
+        const inv = inventories[inventoryId];
+        const products = inv?.products;
+        if (!Array.isArray(products)) return [];
+        return products.map((item) => ({
+            id: item.id,
+            count: item.count || 0,
+        }));
+    } catch (err) {
+        console.error("getProducts error", err);
+        return [];
     }
-
-    const products = inventories[date];
-    const idStr = String(productId);
-
-    const existing = products.find((p) => String(p.id) === idStr);
-    if (existing) {
-      existing.count = (Number(existing.count) || 0) + 1;
-    } else {
-      products.push({ id: idStr, count: 1 });
-    }
-
-    inventories[date] = products;
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(inventories));
-    return inventories[date];
-  } catch (err) {
-    console.error("addProduct error", err);
-    throw err;
-  }
 };
 
-export const updateProductCount = async (date, productId, newCount) => {
-  if (!date) throw new Error("Date is required");
-  try {
-    const inventories = await getInventories();
-    if (!inventories[date] || !Array.isArray(inventories[date])) {
-      throw new Error(`Inventura pro datum ${date} neexistuje.`);
+export const getProductByID = async (inventoryId, id) => {
+    if (!inventoryId || !id) return null;
+    try {
+        const inventories = await getInventories();
+        const inv = inventories[inventoryId];
+        const allProducts = Array.isArray(inv?.products) ? inv.products : [];
+        const idStr = String(id);
+        const product = allProducts.find(item => String(item.id) === idStr) || null;
+        return product;
+    } catch (err) {
+        console.error("getOneProduct", err);
+        return null;
     }
-
-    const idStr = String(productId);
-    const idx = inventories[date].findIndex((p) => String(p.id) === idStr);
-    if (idx === -1) throw new Error(`Produkt ${productId} neexistuje.`);
-
-    inventories[date][idx].count = Number(newCount);
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(inventories));
-    return inventories[date];
-  } catch (err) {
-    console.error("updateProductCount error", err);
-    throw err;
-  }
 };
 
-export const deleteProduct = async (date, productId) => {
-  if (!date) throw new Error("Date is required");
-  try {
-    const inventories = await getInventories();
-    if (!inventories[date] || !Array.isArray(inventories[date])) return [];
+export const addProduct = async (inventoryId, productId) => {
+    if (!inventoryId) throw new Error("Inventory ID is required");
+    try {
+        const inventories = await getInventories();
 
-    const idStr = String(productId);
-    inventories[date] = inventories[date].filter((p) => String(p.id) !== idStr);
+        if (!inventories[inventoryId]) {
+            throw new Error(`Inventura s ID ${inventoryId} neexistuje.`);
+        }
 
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(inventories));
-    return inventories[date];
-  } catch (err) {
-    console.error("deleteProduct error", err);
-    throw err;
-  }
+        if (!Array.isArray(inventories[inventoryId].products)) {
+            inventories[inventoryId].products = [];
+        }
+
+        const products = inventories[inventoryId].products;
+        const idStr = String(productId);
+
+        const existing = products.find((p) => String(p.id) === idStr);
+        if (existing) {
+            existing.count = (Number(existing.count) || 0) + 1;
+        } else {
+            products.push({ id: idStr, count: 1 });
+        }
+
+        inventories[inventoryId].products = products;
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(inventories));
+        return inventories[inventoryId].products;
+    } catch (err) {
+        console.error("addProduct error", err);
+        throw err;
+    }
+};
+
+export const updateProductCount = async (inventoryId, productId, newCount) => {
+    if (!inventoryId) throw new Error("Inventory ID is required");
+    try {
+        const inventories = await getInventories();
+
+        if (!inventories[inventoryId]) {
+            throw new Error(`Inventura pro ID ${inventoryId} neexistuje.`);
+        }
+
+        if (!Array.isArray(inventories[inventoryId].products)) {
+            inventories[inventoryId].products = [];
+        }
+
+        const products = inventories[inventoryId].products;
+        const idStr = String(productId);
+        const idx = products.findIndex((p) => String(p.id) === idStr);
+
+        if (idx === -1) {
+            // pokud produkt neexistuje, vytvoříme jej s daným počtem
+            products.push({ id: idStr, count: Number(newCount) });
+        } else {
+            products[idx].count = Number(newCount);
+        }
+
+        inventories[inventoryId].products = products;
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(inventories));
+        return inventories[inventoryId].products;
+    } catch (err) {
+        console.error("updateProductCount error", err);
+        throw err;
+    }
+};
+
+export const deleteProduct = async (inventoryId, productId) => {
+    if (!inventoryId) throw new Error("Inventory ID is required");
+    try {
+        const inventories = await getInventories();
+
+        if (!inventories[inventoryId] || !Array.isArray(inventories[inventoryId].products)) {
+            return [];
+        }
+
+        const idStr = String(productId);
+        inventories[inventoryId].products = inventories[inventoryId].products.filter(
+            (p) => String(p.id) !== idStr
+        );
+
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(inventories));
+        return inventories[inventoryId].products;
+    } catch (err) {
+        console.error("deleteProduct error", err);
+        throw err;
+    }
 };

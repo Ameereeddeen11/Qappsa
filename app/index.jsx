@@ -1,139 +1,156 @@
-import { useCameraPermissions } from "expo-camera";
-import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
-import { StyleSheet, View } from "react-native";
-import { IconButton, Button, Text, TouchableRipple } from "react-native-paper";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {useCameraPermissions} from "expo-camera";
+import {Stack, router} from "expo-router";
+import {useCallback, useState} from "react";
+import {StyleSheet, View, RefreshControl, ScrollView} from "react-native";
 import {
-  getInventories,
-  addInventory,
-  deleteInventory,
+    IconButton,
+    Button,
+    Text,
+    Divider,
+    TouchableRipple
+} from "react-native-paper";
+import {SafeAreaView} from "react-native-safe-area-context";
+import {
+    getInventories,
+    addInventory,
+    deleteInventory
 } from "../utils/inventory";
-import { ScrollView } from "react-native";
+import {MenuComponent} from "@/components/Menu";
+import {useFocusEffect} from "@react-navigation/native";
 
 export default function HomeScreen() {
-  const [permission, requestPermission] = useCameraPermissions();
-  const [inventories, setInventories] = useState([]);
-  const router = useRouter();
+    const [permission, requestPermission] = useCameraPermissions();
+    const [inventories, setInventories] = useState([]);
+    const [visible, setVisible] = useState(null);
+    const [refreshing, setRefreshing] = useState(false);
+    // const router = useRouter();
 
-  const handleAddInventory = () => {
-    const date = new Date().toISOString().split("T")[0];
-    addInventory(date)
-      .then((inventories) => {
-        setInventories(inventories);
-        router.push({ pathname: "/inventory", params: { date } });
-      })
-      .catch((error) => {
-        console.error("Chyba při přidávání inventury:", error);
-        alert(error.message);
-      });
-  };
-
-  useEffect(() => {
-    const fetchInventories = async () => {
-      const data = await getInventories();
-      setInventories(data);
+    const handleAddInventory = () => {
+        const date = new Date().toISOString().split("T")[0];
+        addInventory(date)
+            .then(({inventories, id, name}) => {
+                setInventories(inventories);
+                router.push({pathname: "/inventory", params: {id: id, date: name}});
+            })
+            .catch((error) => {
+                console.error("Chyba při přidávání inventury:", error);
+                alert(error.message);
+            });
     };
-    fetchInventories();
-  });
 
-  if (!permission) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <Text>Loading camera permission...</Text>
-      </View>
+    const fetchData = async () => {
+        try {
+            const data = await getInventories();
+            setInventories(data);
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchData();
+        }, [])
     );
-  }
 
-  if (!permission.granted) {
+    if (!permission) {
+        return (
+            <View style={styles.centered}>
+                <Text>Loading camera permission...</Text>
+            </View>
+        );
+    }
+
+    if (!permission.granted) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <Text style={styles.message}>
+                    We need your permission to show the camera
+                </Text>
+                <Button mode="contained" onPress={requestPermission}>
+                    Grant Permission
+                </Button>
+            </SafeAreaView>
+        );
+    }
+
     return (
-      <SafeAreaView style={{ flex: 1 }}>
-        <Text style={styles.message}>
-          We need your permission to show the camera
-        </Text>
-        <Button onPress={requestPermission}>grant permission</Button>
-      </SafeAreaView>
-    );
-  }
-
-  return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView style={{ marginTop: 20 }}>
-        {Object.keys(inventories).length === 0 ? (
-          <Text style={{textAlign: "center"}}>Žádné inventury</Text>
-        ) : (
-          Object.entries(inventories).map(([date, products]) => (
-            <TouchableRipple
-              style={styles.listItem}
-              onPress={() =>
-                router.push({ pathname: "/inventory", params: { date } })
-              }
-              key={date}
-            >
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
+        <SafeAreaView>
+            <Stack.Screen
+                options={{
+                    title: "Home",
+                    headerRight: () => (
+                        <IconButton icon="plus" size={24} onPress={handleAddInventory}/>
+                    ),
                 }}
-              >
-                <View style={{ flex: 1, justifyContent: "center" }}>
-                  <Text>{date}</Text>
-                </View>
-                <View style={{ flex: 1, justifyContent: "center" }}>
-                  <Text>Pocet: {products.length}</Text>
-                </View>
-                <>
-                  <IconButton
-                    icon="delete-empty"
-                    size={20}
-                    iconColor="red"
-                    onPress={() =>
-                      deleteInventory(date).then(() => {
-                        setInventories((prev) => {
-                          const newInventories = { ...prev };
-                          delete newInventories[date];
-                          return newInventories;
-                        });
-                      })
-                    }
-                  />
-                </>
-              </View>
-            </TouchableRipple>
-          ))
-        )}
-      </ScrollView>
-      <Button
-        mode="contained"
-        style={styles.createInventoryButtton}
-        onPress={handleAddInventory}
-      >
-        Přidat inventuru
-      </Button>
-    </SafeAreaView>
-  );
+            />
+            <ScrollView
+                contentContainerStyle={styles.container}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={fetchData}
+                    />
+                }
+            >
+                {Object.keys(inventories).length === 0 ? (
+                    <Text style={{textAlign: "center"}}>Žádné inventury</Text>
+                ) : (
+                    Object.entries(inventories).map(([id, inv]) => (
+                        // <View key={id}>
+                            <TouchableRipple
+                                key={id}
+                                style={styles.card}
+                                onPress={() =>
+                                    router.push({pathname: "/inventory", params: {id, date: inv.name}})
+                                }
+                            >
+                                <>
+                                    <Text variant="titleMedium">{inv?.name}</Text>
+                                    <Text variant="titleMedium">{inv?.products?.length || 0}</Text>
+                                    <MenuComponent
+                                        date={id}
+                                        visible={visible}
+                                        setVisible={setVisible}
+                                        deleteAction={() => {
+                                            void deleteInventory(id).then(() => {
+                                                setVisible(null);
+                                                getInventories().then(setInventories);
+                                            })
+                                        }}
+                                    />
+                                </>
+                            </TouchableRipple>
+                        // </View>
+                    ))
+                )}
+                <Divider/>
+            </ScrollView>
+        </SafeAreaView>
+    );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-  },
-  listItem: {
-    padding: 10,
-    borderTopWidth: 0.2,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
-  },
-  message: {
-    textAlign: "center",
-    paddingBottom: 10,
-  },
-  createInventoryButtton: {
-    position: "absolute",
-    padding: 5,
-    bottom: 50,
-    left: 30,
-    right: 30,
-  }
+    container: {
+        paddingHorizontal: 15
+    },
+    centered: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    message: {
+        textAlign: "center",
+        marginBottom: 10,
+    },
+    card: {
+        height: 70,
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+    },
+    cameraOverlay: {
+        alignItems: "center",
+        paddingBottom: 20,
+    },
 });

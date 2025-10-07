@@ -1,207 +1,198 @@
-import { CameraView, useCameraPermissions } from "expo-camera";
-import { useRouter, useGlobalSearchParams, Stack } from "expo-router";
-import { useEffect, useRef, useState, useContext } from "react";
-import { FlatList, StyleSheet, View } from "react-native";
-import { IconButton, Text, TouchableRipple, Button } from "react-native-paper";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { getProducts, addProduct, deleteProduct } from "../utils/products";
-import { GlobalContext } from "@/context/GlobalProvider";
-import { RefreshControl } from "react-native";
-import { getInventories } from "@/utils/inventory";
-import { exportToCSV, formatDataForExport } from "@/utils/export";
+import {useRouter, useGlobalSearchParams, Stack} from "expo-router";
+import {useEffect, useState, useContext, useCallback} from "react";
+import {View, ScrollView, KeyboardAvoidingView, Platform} from "react-native";
+import {Text, Portal, Modal} from "react-native-paper";
+import {RefreshControl} from "react-native";
 
-export default function InventoryScreen() {
-  const [permission, requestPermission] = useCameraPermissions();
-  const [scanning, setScanning] = useState(false);
-  const [products, setProducts] = useState([]);
-  const scannedRef = useRef(false);
-  const router = useRouter();
-  const { refreshing, setRefreshing } = useContext(GlobalContext);
+import {getProducts, deleteProduct} from "@/utils/products";
+import {deleteInventory} from "@/utils/inventory";
+import {GlobalContext} from "@/context/GlobalProvider";
+import {MenuComponent} from "@/components/Menu";
+import {ModalCard} from "@/components/ModalCard";
+import {useFocusEffect} from "@react-navigation/native";
+import {SafeAreaView} from "react-native-safe-area-context";
+import {CameraScanner} from "@/components/CameraScanner";
+import {ManualInput} from "@/components/ManualInput";
+import {ProductList} from "@/components/ProductList";
+import {SaveSnackbar} from "@/components/SaveSnackbar";
+import {useInventoryLogic} from "@/hooks/useInventoryLogic";
+import {useCameraPermission} from "@/hooks/useCameraPermission";
+import {styles} from "@/styles/inventoryStyles";
 
-  const { date } = useGlobalSearchParams();
+export default function Inventory() {
+    const router = useRouter();
+    const {refreshing, setRefreshing} = useContext(GlobalContext);
+    const {id, date} = useGlobalSearchParams();
 
-  const onRefresh = () => {
-    const fetchProducts = async () => {
-      const data = await getProducts(date);
-      setProducts(data);
+    const [products, setProducts] = useState([]);
+    const [visible, setVisible] = useState(null);
+    const [modal, setModal] = useState(false);
+    const [openedForEdit, setOpenedForEdit] = useState('');
+
+    // Custom hooks
+    const {permission} = useCameraPermission();
+    const {
+        scanning,
+        idProduct,
+        count,
+        saved,
+        scaleAnimated,
+        setScanning,
+        setIdProduct,
+        setCount,
+        setSaved,
+        saveManual,
+        handleBarCodeScanned,
+        startScan,
+        resetInputs
+    } = useInventoryLogic(id, setProducts);
+
+    const showModal = (productId) => {
+        setModal(true);
+        setOpenedForEdit(productId);
     };
-    fetchProducts();
-  }
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      const data = await getProducts(date);
-      setProducts(data);
+    const hideModal = () => {
+        setModal(false);
+        setOpenedForEdit('');
+        setCount('');
+        setSaved(false);
     };
-    fetchProducts();
-  }, []);
 
-  const handleBarCodeScanned = async ({ data }) => {
-    if (scannedRef.current) return;
-    scannedRef.current = true;
+    const fetchProducts = async () => {
+        const data = await getProducts(id);
+        setProducts(data);
+    };
 
-    try {
-      const updatedProducts = await addProduct(date, data);
-      setProducts(updatedProducts);
-    } catch (error) {
-      console.error("Chyba při přidávání produktu:", error);
-    }
-    setScanning(false);
-  };
+    const onRefresh = () => {
+        setRefreshing(true);
+        fetchProducts().then(() => setRefreshing(false));
+    };
 
-  const handlePress = ({ item }) => {
-    if (scanning) {
-      setScanning(false);
-    } else {
-      router.push({
-        pathname: "/product",
-        params: { id: item.id, date: date },
-      });
-    }
-  };
+    const removeScannedCode = async (productId) => {
+        try {
+            const updatedProducts = await deleteProduct(id, productId);
+            setProducts(updatedProducts);
+        } catch (error) {
+            console.error("Chyba při mazání produktu:", error);
+        }
+    };
 
-  const startScan = () => {
-    scannedRef.current = false;
-    setScanning(true);
-  };
+    const handleDeleteInventory = () => {
+        deleteInventory(id).then(() => {
+            router.back();
+            setVisible(null);
+        });
+    };
 
-  const removeScannedCode = async (productId) => {
-    try {
-      const updatedProducts = await deleteProduct(date, productId);
-      setProducts(updatedProducts);
-    } catch (error) {
-      console.error("Chyba při mazání produktu:", error);
-    }
-  };
+    useEffect(() => {
+        fetchProducts();
+    }, []);
 
-  if (!permission) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <Text>Loading camera permission...</Text>
-      </View>
+    useFocusEffect(
+        useCallback(() => {
+            resetInputs();
+            return () => {};
+        }, [id, resetInputs])
     );
-  }
 
-  if (!permission.granted) {
+    if (!permission) {
+        return (
+            <View style={styles.centered}>
+                <Text>Loading camera permission...</Text>
+            </View>
+        );
+    }
+
+    if (!permission.granted) {
+        return (
+            <View style={styles.centered}>
+                <Text style={styles.message}>
+                    We need your permission to show the camera
+                </Text>
+            </View>
+        );
+    }
+
     return (
-      <View style={{ flex: 1 }}>
-        <Text style={styles.message}>
-          We need your permission to show the camera
-        </Text>
-        <Button onPress={requestPermission} title="grant permission" />
-      </View>
-    );
-  }
-
-  return (
-    <SafeAreaView style={styles.container}>
-      <Stack.Screen
-        options={{
-          title: date ? `Inventura: ${date}` : "Inventury"
-        }}
-      />
-        <View style={styles.cameraContainer}>
-          {!scanning ? (
-            <IconButton
-              icon="magnify-scan"
-              mode="contained"
-              size={250}
-              onPress={startScan}
-              style={{ borderRadius: 25 }}
-            />
-          ) : (
-            <>
-              <CameraView
-                style={styles.camera}
-                onBarcodeScanned={handleBarCodeScanned}
-              />
-              <Text style={styles.scanningText}>
-                Namiřte fotoaparát na čárový kód...
-              </Text>
-              <Button title="Zrušit" onPress={() => setScanning(false)} />
-            </>
-          )}
-        </View>
-        <FlatList
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-          data={products}
-          keyExtractor={(item) => String(item.id)}
-          renderItem={({ item }) => (
-            <TouchableRipple
-              style={styles.listItem}
-              onPress={() => handlePress({ item })}
+        <SafeAreaView>
+            <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                style={{height: "100%"}}
             >
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                }}
-              >
-                <View style={{ flex: 1, justifyContent: "center" }}>
-                  <Text>ID: {item.id}</Text>
-                </View>
-                <View style={{ flex: 1, justifyContent: "center" }}>
-                  <Text>Počet: {item.count}</Text>
-                </View>
-                <IconButton
-                  icon="delete-empty"
-                  size={20}
-                  iconColor="red"
-                  onPress={() => removeScannedCode(item.id)}
-                />
-              </View>
-            </TouchableRipple>
-          )}
-        />
-        <IconButton
-          icon="file-export"
-          size={70}
-          onPress={() => {
-            const formattedData = formatDataForExport(products);
-            exportToCSV(formattedData, `inventury_${date}`);
-          }}
-          style={styles.createInventoryButtton}
-        />
-    </SafeAreaView>
-  );
-}
+                {/*<Stack.Screen*/}
+                {/*    name="inventory"*/}
+                {/*    options={{*/}
+                {/*        title: date,*/}
+                {/*        headerShown: true,*/}
+                {/*        headerRight: () => (*/}
+                {/*            <MenuComponent*/}
+                {/*                date={date}*/}
+                {/*                visible={visible}*/}
+                {/*                setVisible={setVisible}*/}
+                {/*                deleteAction={handleDeleteInventory}*/}
+                {/*            />*/}
+                {/*        ),*/}
+                {/*    }}*/}
+                {/*/>*/}
+                <ScrollView
+                    contentContainerStyle={styles.container}
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh}/>}
+                    keyboardShouldPersistTaps="handled"
+                    bounces={false}
+                >
+                    <Portal>
+                        <Modal visible={modal} onDismiss={hideModal}>
+                            <ModalCard
+                                id={openedForEdit}
+                                setOpenedForEdit={setOpenedForEdit}
+                                date={id}
+                                countDynamic={count}
+                                setCountDynamic={setCount}
+                                onRefresh={onRefresh}
+                                setModal={setModal}
+                            />
+                        </Modal>
+                    </Portal>
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-  },
-  scanningText: {
-    marginTop: 10,
-    textAlign: "center",
-  },
-  listItem: {
-    padding: 10,
-    borderTopWidth: 0.2,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
-  },
-  createInventoryButtton: {
-    position: "absolute",
-    padding: 5,
-    bottom: 50,
-    right: "45%",
-  },
-  cameraContainer: {
-    height: "50%",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  camera: {
-    flex: 1,
-    aspectRatio: 1,
-    borderRadius: 8,
-    overflow: "hidden",
-  },
-  message: {
-    textAlign: "center",
-    paddingBottom: 10,
-  },
-});
+                    <CameraScanner
+                        scanning={scanning}
+                        onBarCodeScanned={handleBarCodeScanned}
+                        onCancelScan={() => setScanning(false)}
+                        onStartScan={startScan}
+                    />
+
+                    <ManualInput
+                        idProduct={idProduct.toString()}
+                        count={count}
+                        saved={saved}
+                        scaleAnimated={scaleAnimated}
+                        onIdChange={setIdProduct}
+                        onCountChange={setCount}
+                        onSave={saveManual}
+                    />
+
+                    <ProductList
+                        products={products}
+                        visible={visible}
+                        onSetVisible={setVisible}
+                        onShowModal={showModal}
+                        onEditProduct={(item) => {
+                            setIdProduct(item.id);
+                            setCount(item.count);
+                            setOpenedForEdit(item.id);
+                            setModal(true);
+                            setVisible(null);
+                        }}
+                        onRemoveProduct={removeScannedCode}
+                    />
+                </ScrollView>
+
+                <SaveSnackbar
+                    visible={saved}
+                    onDismiss={() => setSaved(false)}
+                />
+            </KeyboardAvoidingView>
+        </SafeAreaView>
+    );
+}
