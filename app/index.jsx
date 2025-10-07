@@ -1,6 +1,6 @@
 import {useCameraPermissions} from "expo-camera";
 import {Stack, router} from "expo-router";
-import {useCallback, useEffect, useState} from "react";
+import {useCallback, useState} from "react";
 import {StyleSheet, View, RefreshControl, ScrollView} from "react-native";
 import {
     IconButton,
@@ -75,7 +75,7 @@ export default function HomeScreen() {
     }
 
     return (
-        <>
+        <SafeAreaView>
             <Stack.Screen
                 options={{
                     title: "Home",
@@ -97,8 +97,9 @@ export default function HomeScreen() {
                     <Text style={{textAlign: "center"}}>Žádné inventury</Text>
                 ) : (
                     Object.entries(inventories).map(([id, inv]) => (
-                        <View key={id}>
+                        // <View key={id}>
                             <TouchableRipple
+                                key={id}
                                 style={styles.card}
                                 onPress={() =>
                                     router.push({pathname: "/inventory", params: {id, date: inv.name}})
@@ -120,12 +121,12 @@ export default function HomeScreen() {
                                     />
                                 </>
                             </TouchableRipple>
-                        </View>
+                        // </View>
                     ))
                 )}
                 <Divider/>
             </ScrollView>
-        </>
+        </SafeAreaView>
     );
 }
 

@@ -28,29 +28,21 @@ const ensureUniqueName = (inventories, baseName) => {
     return candidate;
 };
 
-export const addInventory = async (name) => {
-    try {
-        const inventories = await getInventories();
+export const addInventory = async (date) => {
+  try {
+    const inventories = await getInventories();
 
-        // ID inventury – číslo z Date.now()
-        const id = Date.now();
-        const createdAt = new Date().toISOString();
-        const defaultName = new Date().toISOString().split("T")[0];
-        const baseName = name && String(name).trim().length > 0 ? String(name).trim() : defaultName;
-        const uniqueName = ensureUniqueName(inventories, baseName);
-
-        inventories[id] = {
-            name: uniqueName,
-            createdAt: createdAt,
-            products: []
-        };
-
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(inventories));
-        return {inventories, id, name};
-    } catch (error) {
-        console.error("Chyba při přidávání inventury:", error);
-        throw error;
+    if (inventories[date]) {
+      throw new Error(`Inventura pro datum ${date} už existuje.`);
     }
+
+    inventories[date] = { name: date, products: [] };
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(inventories));
+    return { inventories, id: date, name: date };
+  } catch (error) {
+    console.error("Chyba při přidávání inventury:", error);
+    throw error;
+  }
 };
 
 export const getInventoryByDate = async (id) => {
