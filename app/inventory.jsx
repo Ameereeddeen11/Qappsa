@@ -120,21 +120,21 @@ export default function Inventory() {
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
                 style={{height: "100%"}}
             >
-                {/*<Stack.Screen*/}
-                {/*    name="inventory"*/}
-                {/*    options={{*/}
-                {/*        title: date,*/}
-                {/*        headerShown: true,*/}
-                {/*        headerRight: () => (*/}
-                {/*            <MenuComponent*/}
-                {/*                date={date}*/}
-                {/*                visible={visible}*/}
-                {/*                setVisible={setVisible}*/}
-                {/*                deleteAction={handleDeleteInventory}*/}
-                {/*            />*/}
-                {/*        ),*/}
-                {/*    }}*/}
-                {/*/>*/}
+                <Stack.Screen
+                    // name="inventory"
+                    options={{
+                        title: date,
+                        // headerShown: true,
+                        headerRight: () => (
+                            <MenuComponent
+                                date={date}
+                                visible={visible}
+                                setVisible={setVisible}
+                                deleteAction={handleDeleteInventory}
+                            />
+                        ),
+                    }}
+                />
                 <ScrollView
                     contentContainerStyle={styles.container}
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh}/>}
