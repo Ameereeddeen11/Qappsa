@@ -4,8 +4,6 @@ import {Divider} from "react-native-paper";
 import {exportToCSV, formatDataForExport} from "@/utils/export";
 import {deleteInventory, getInventoryByDate} from "@/utils/inventory";
 
-const router = useRouter();
-
 export const MenuComponent = ({date, visible, setVisible, deleteAction}) => {
     return (
         <Menu
