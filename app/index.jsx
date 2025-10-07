@@ -1,5 +1,5 @@
 import {useCameraPermissions} from "expo-camera";
-import {Stack, useRouter} from "expo-router";
+import {Stack, router} from "expo-router";
 import {useCallback, useEffect, useState} from "react";
 import {StyleSheet, View, RefreshControl, ScrollView} from "react-native";
 import {
@@ -23,7 +23,7 @@ export default function HomeScreen() {
     const [inventories, setInventories] = useState([]);
     const [visible, setVisible] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
-    const router = useRouter();
+    // const router = useRouter();
 
     const handleAddInventory = () => {
         const date = new Date().toISOString().split("T")[0];
