@@ -32,12 +32,8 @@ export const addInventory = async (date) => {
   try {
     const inventories = await getInventories();
 
-    // if (inventories[date]) {
-    //   throw new Error(`Inventura pro datum ${date} už existuje.`);
-    // }
-
-    const id = Date.now().toString();
-    inventories[date] = { id: id, name: date, products: [] };
+    const id = Date.now()
+    inventories[id] = { id: id, name: date, products: [] };
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(inventories));
     return { inventories, id: id, name: date };
   } catch (error) {
@@ -45,40 +41,6 @@ export const addInventory = async (date) => {
     throw error;
   }
 };
-
-// export const addInventory = async (date = 'Nová inventura') => {
-//     try {
-//         // 1. Získáme aktuální inventury
-//         const inventories = await getInventories();
-//
-//         // 2. Vytvoříme unikátní ID pomocí Date.now()
-//         const newId = Date.now().toString();
-//
-//         // 3. Zajistíme unikátní název na základě zadaného datumu
-//         //    Použijeme pomocnou funkci, kterou už máte
-//         const baseName = String(date).trim() || 'Inventura';
-//
-//         // Zde zajistíme unikátnost názvu, aby se zabránilo kolizím v UI
-//         const uniqueName = ensureUniqueName(inventories, baseName);
-//
-//
-//         // 4. Přidáme novou inventuru s unikátním ID a názvem
-//         inventories[newId] = { name: uniqueName, products: [] };
-//
-//         // 5. Uložíme aktualizovaný seznam
-//         await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(inventories));
-//
-//         // 6. Vrátíme výsledek
-//         return { inventories, id: newId, name: uniqueName };
-//     } catch (error) {
-//         console.error("Chyba při přidávání inventury:", error);
-//         throw error;
-//     }
-// };
-
-// POZNÁMKA: Původní kontrola na `if (inventories[date])` byla odstraněna,
-// protože ID se generuje unikátně z `Date.now()`, a proto nemůže dojít ke kolizi ID.
-// Kolize názvů je řešena funkcí `ensureUniqueName`.
 
 export const getInventoryByDate = async (id) => {
     // Pozn.: zachováváme původní název funkce kvůli kompatibilitě,

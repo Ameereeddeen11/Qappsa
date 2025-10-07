@@ -11,6 +11,7 @@ export const MenuComponent = ({date, visible, setVisible, deleteAction}) => {
             onDismiss={() => setVisible(null)}
             anchor={
                 <IconButton
+                    style={{margin: 0}}
                     icon="dots-vertical"
                     size={24}
                     onPress={() => setVisible(date)}
@@ -22,8 +23,9 @@ export const MenuComponent = ({date, visible, setVisible, deleteAction}) => {
                 leadingIcon="file-export"
                 onPress={() => {
                     getInventoryByDate(date).then((data) => {
+                        // console.log("Exportovat inventuru: ", data);
                         formatDataForExport(data);
-                        exportToCSV(data, date);
+                        exportToCSV(data);
                     });
                     setVisible(null);
                 }}

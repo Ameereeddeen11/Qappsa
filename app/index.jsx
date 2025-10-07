@@ -27,8 +27,6 @@ export default function HomeScreen() {
     // const router = useRouter();
 
     const handleAddInventory = () => {
-        // const id = Date.now();
-        // const date =
         const date = new Date().toISOString().split("T")[0];
         addInventory(date)
             .then(({inventories, id, name}) => {
@@ -118,7 +116,7 @@ export default function HomeScreen() {
                                     <Text variant="titleMedium">{inv?.name}</Text>
                                     <Text variant="titleMedium">{inv?.products?.length || 0}</Text>
                                     <MenuComponent
-                                        date={id}
+                                        date={inv.id}
                                         visible={visible}
                                         setVisible={setVisible}
                                         deleteAction={() => {

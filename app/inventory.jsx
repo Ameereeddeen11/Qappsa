@@ -121,13 +121,11 @@ export default function Inventory() {
                 style={{height: "100%"}}
             >
                 <Stack.Screen
-                    // name="inventory"
                     options={{
-                        title: date,
-                        // headerShown: true,
+                        title: id,
                         headerRight: () => (
                             <MenuComponent
-                                date={date}
+                                date={id}
                                 visible={visible}
                                 setVisible={setVisible}
                                 deleteAction={handleDeleteInventory}
