@@ -32,9 +32,9 @@ export const addInventory = async (date) => {
   try {
     const inventories = await getInventories();
 
-    if (inventories[date]) {
-      throw new Error(`Inventura pro datum ${date} už existuje.`);
-    }
+    // if (inventories[date]) {
+    //   throw new Error(`Inventura pro datum ${date} už existuje.`);
+    // }
 
     inventories[date] = { name: date, products: [] };
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(inventories));

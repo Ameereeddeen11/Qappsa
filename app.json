@@ -8,6 +8,7 @@
     "scheme": "qappsa",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "backgroundColor": "#182b59",
     "ios": {
       "supportsTablet": true
     },

@@ -4,6 +4,7 @@ import {useCallback, useState} from "react";
 import {StyleSheet, View, RefreshControl, ScrollView} from "react-native";
 import {
     IconButton,
+    Icon,
     Button,
     Text,
     Divider,
@@ -26,7 +27,7 @@ export default function HomeScreen() {
     // const router = useRouter();
 
     const handleAddInventory = () => {
-        const date = new Date().toISOString().split("T")[0];
+        const date = Date.now();
         addInventory(date)
             .then(({inventories, id, name}) => {
                 setInventories(inventories);
@@ -80,8 +81,14 @@ export default function HomeScreen() {
                 options={{
                     title: "Home",
                     headerRight: () => (
-                        <IconButton icon="plus" size={24} onPress={handleAddInventory}/>
-                    ),
+                        <IconButton
+                            icon="plus"
+                            onPress={handleAddInventory}
+                            style={{
+                                margin: 0,
+                            }}
+                        />
+                    )
                 }}
             />
             <ScrollView
@@ -132,7 +139,8 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
     container: {
-        paddingHorizontal: 15
+        paddingHorizontal: 15,
+        height: "100%",
     },
     centered: {
         flex: 1,

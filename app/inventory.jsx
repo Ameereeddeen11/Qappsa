@@ -3,7 +3,6 @@ import {useEffect, useState, useContext, useCallback} from "react";
 import {View, ScrollView, KeyboardAvoidingView, Platform} from "react-native";
 import {Text, Portal, Modal} from "react-native-paper";
 import {RefreshControl} from "react-native";
-
 import {getProducts, deleteProduct} from "@/utils/products";
 import {deleteInventory} from "@/utils/inventory";
 import {GlobalContext} from "@/context/GlobalProvider";
@@ -86,7 +85,9 @@ export default function Inventory() {
     };
 
     useEffect(() => {
-        fetchProducts();
+        fetchProducts().then(
+            console.log(products)
+        );
     }, []);
 
     useFocusEffect(
