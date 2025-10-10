@@ -1,7 +1,7 @@
 import {useCameraPermissions} from "expo-camera";
 import {Stack, router} from "expo-router";
 import {useCallback, useState} from "react";
-import {StyleSheet, View, RefreshControl, ScrollView} from "react-native";
+import {StyleSheet, View, RefreshControl, ScrollView, Dimensions} from "react-native";
 import {
     IconButton,
     Icon,
@@ -18,6 +18,8 @@ import {
 } from "../utils/inventory";
 import {MenuComponent} from "@/components/Menu";
 import {useFocusEffect} from "@react-navigation/native";
+
+const deviceHeight = Dimensions.get('window').height;
 
 export default function HomeScreen() {
     const [permission, requestPermission] = useCameraPermissions();
@@ -76,23 +78,20 @@ export default function HomeScreen() {
     }
 
     return (
-        <SafeAreaView>
+        <SafeAreaView style={styles.container}>
             <Stack.Screen
                 options={{
-                    title: "Home",
                     headerRight: () => (
                         <IconButton
                             icon="plus"
                             onPress={handleAddInventory}
-                            style={{
-                                margin: 0,
-                            }}
+                            style={{margin: 0}}
                         />
                     )
                 }}
             />
             <ScrollView
-                contentContainerStyle={styles.container}
+                // contentContainerStyle={styles.container}
                 refreshControl={
                     <RefreshControl
                         refreshing={refreshing}
@@ -101,37 +100,39 @@ export default function HomeScreen() {
                 }
             >
                 {Object.keys(inventories).length === 0 ? (
-                    <Text style={{textAlign: "center"}}>Žádné inventury</Text>
+                    <Text style={{textAlign: "center", paddingBottom: deviceHeight / 2}}>Žádné inventury</Text>
                 ) : (
-                    Object.entries(inventories).map(([id, inv]) => (
-                        // <View key={id}>
-                            <TouchableRipple
-                                key={id}
-                                style={styles.card}
-                                onPress={() =>
-                                    router.push({pathname: "/inventory", params: {id, date: inv.name}})
-                                }
-                            >
-                                <>
-                                    <Text variant="titleMedium">{inv?.name}</Text>
-                                    <Text variant="titleMedium">{inv?.products?.length || 0}</Text>
-                                    <MenuComponent
-                                        date={inv.id}
-                                        visible={visible}
-                                        setVisible={setVisible}
-                                        deleteAction={() => {
-                                            void deleteInventory(id).then(() => {
-                                                setVisible(null);
-                                                getInventories().then(setInventories);
-                                            })
-                                        }}
-                                    />
-                                </>
-                            </TouchableRipple>
-                        // </View>
-                    ))
+                    <>
+                        {Object.entries(inventories).map(([id, inv]) => (
+                            // <View key={id}>
+                                <TouchableRipple
+                                    key={id}
+                                    style={styles.card}
+                                    onPress={() =>
+                                        router.push({pathname: "/inventory", params: {id, date: inv.name}})
+                                    }
+                                >
+                                    <>
+                                        <Text variant="titleMedium">{inv?.name}</Text>
+                                        <Text variant="titleMedium">{inv?.products?.length || 0}</Text>
+                                        <MenuComponent
+                                            date={inv.id}
+                                            visible={visible}
+                                            setVisible={setVisible}
+                                            deleteAction={() => {
+                                                void deleteInventory(id).then(() => {
+                                                    setVisible(null);
+                                                    getInventories().then(setInventories);
+                                                })
+                                            }}
+                                        />
+                                    </>
+                                </TouchableRipple>
+                            // </View>
+                        ))}
+                    <Divider/>
+                    </>
                 )}
-                <Divider/>
             </ScrollView>
         </SafeAreaView>
     );
@@ -139,8 +140,7 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
     container: {
-        paddingHorizontal: 15,
-        height: "100%",
+        height: deviceHeight,
     },
     centered: {
         flex: 1,
@@ -156,6 +156,7 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
+        paddingHorizontal: 15,
     },
     cameraOverlay: {
         alignItems: "center",

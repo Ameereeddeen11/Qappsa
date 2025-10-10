@@ -52,23 +52,23 @@ export default function RootLayout() {
             <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
                 <GlobalProvider>
                     {/*<View onLayout={onLayoutRootView}>*/}
-                        <Stack>
-                            <Stack.Screen
-                                name="index"
-                                options={{
-                                    headerShown: true,
-                                    title: "Home",
-                                }}
-                            />
-                            <Stack.Screen
-                                name="inventory"
-                                options={{headerShown: true, title: "Inventory"}}
-                            />
-                            <Stack.Screen
-                                name="product"
-                                options={{headerShown: true, title: "Product"}}
-                            />
-                        </Stack>
+                    <Stack>
+                        <Stack.Screen
+                            name="index"
+                            options={{
+                                headerShown: true,
+                                title: "Home",
+                            }}
+                        />
+                        <Stack.Screen
+                            name="inventory"
+                            options={{headerShown: true}}
+                        />
+                        <Stack.Screen
+                            name="product"
+                            options={{headerShown: true, title: "Product"}}
+                        />
+                    </Stack>
                     {/*</View>*/}
                     <StatusBar style="auto"/>
                 </GlobalProvider>

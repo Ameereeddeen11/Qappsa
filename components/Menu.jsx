@@ -1,14 +1,15 @@
-import {IconButton, Icon, Menu} from "react-native-paper";
-import {useRouter} from "expo-router";
+import {IconButton, Menu} from "react-native-paper";
 import {Divider} from "react-native-paper";
 import {exportToCSV, formatDataForExport} from "@/utils/export";
 import {deleteInventory, getInventoryByDate} from "@/utils/inventory";
+import {router} from "expo-router";
 
 export const MenuComponent = ({date, visible, setVisible, deleteAction}) => {
     return (
         <Menu
             visible={visible === date}
             onDismiss={() => setVisible(null)}
+            onPress={() => setVisible(date)}
             anchor={
                 <IconButton
                     style={{margin: 0}}
@@ -23,9 +24,8 @@ export const MenuComponent = ({date, visible, setVisible, deleteAction}) => {
                 leadingIcon="file-export"
                 onPress={() => {
                     getInventoryByDate(date).then((data) => {
-                        // console.log("Exportovat inventuru: ", data);
-                        formatDataForExport(data);
-                        exportToCSV(data);
+                        // formatDataForExport(data);
+                        exportToCSV(data.products, date);
                     });
                     setVisible(null);
                 }}

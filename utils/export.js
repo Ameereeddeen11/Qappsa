@@ -1,5 +1,5 @@
 import * as XLSX from "xlsx";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 
 export const formatDataForExport = (products, inventoryName) => {
@@ -18,7 +18,6 @@ export const formatDataForExport = (products, inventoryName) => {
 
 export const exportToCSV = async (data, filename) => {
     try {
-        // Zde se nic nemění, funkce funguje s polem objektů, které vytvoří formatDataForExport
         const worksheet = XLSX.utils.json_to_sheet(data);
         const workbook = XLSX.utils.book_new();
 
@@ -28,7 +27,7 @@ export const exportToCSV = async (data, filename) => {
         const fileUri = `${FileSystem.documentDirectory}${filename}.csv`;
 
         await FileSystem.writeAsStringAsync(fileUri, csv, {
-            encoding: FileSystem.EncodingType.UTF8,
+            encoding: 'utf8',
         });
 
         await Sharing.shareAsync(fileUri, {
