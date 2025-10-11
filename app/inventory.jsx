@@ -1,7 +1,7 @@
 import {useRouter, useGlobalSearchParams} from "expo-router";
 import {useEffect, useState, useContext, useCallback} from "react";
-import {View, FlatList, KeyboardAvoidingView, Platform, Keyboard, RefreshControl} from "react-native";
-import {Text, Portal, Modal, Appbar} from "react-native-paper";
+import {View, KeyboardAvoidingView, Platform, Keyboard, RefreshControl, FlatList} from "react-native";
+import {Text, Portal, Modal, Appbar, DataTable} from "react-native-paper";
 import {getProducts, deleteProduct} from "@/utils/products";
 import {deleteInventory} from "@/utils/inventory";
 import {GlobalContext} from "@/context/GlobalProvider";
@@ -11,11 +11,11 @@ import {useFocusEffect} from "@react-navigation/native";
 import {SafeAreaView} from "react-native-safe-area-context";
 import {CameraScanner} from "@/components/CameraScanner";
 import {ManualInput} from "@/components/ManualInput";
-import {ProductList} from "@/components/ProductList";
 import {SaveSnackbar} from "@/components/SaveSnackbar";
 import {useInventoryLogic} from "@/hooks/useInventoryLogic";
 import {useCameraPermission} from "@/hooks/useCameraPermission";
 import {styles} from "@/styles/inventoryStyles";
+import {CustomDataTable} from "@/components/DataTabel";
 
 export default function Inventory() {
     const router = useRouter();
@@ -90,7 +90,8 @@ export default function Inventory() {
     useFocusEffect(
         useCallback(() => {
             resetInputs();
-            return () => {};
+            return () => {
+            };
         }, [resetInputs])
     );
 
@@ -167,11 +168,17 @@ export default function Inventory() {
                     <FlatList
                         data={productsSorted}
                         keyExtractor={item => item.id?.toString()}
-                        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh}/>} 
-                        // inverted={true}
+                        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh}/>}
+                        ListHeaderComponent={(
+                            <DataTable.Header>
+                                <DataTable.Title numeric style={{justifyContent: "flex-start"}}>ID</DataTable.Title>
+                                <DataTable.Title numeric>Počet</DataTable.Title>
+                                <DataTable.Title numeric></DataTable.Title>
+                            </DataTable.Header>
+                        )}
                         renderItem={({item}) => (
-                            <ProductList
-                                products={[item]}
+                            <CustomDataTable
+                                product={[item]}
                                 visible={visible}
                                 onSetVisible={setVisible}
                                 onShowModal={showModal}
