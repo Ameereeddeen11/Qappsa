@@ -30,7 +30,7 @@ export function CameraScanner({
 
     return (
         <IconButton
-            icon="magnify-scan"
+            icon="barcode-scan"
             mode="contained"
             size={250}
             onPress={onStartScan}

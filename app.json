@@ -8,7 +8,7 @@
     "scheme": "qappsa",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "backgroundColor": "#182b59",
+    "backgroundColor": "#ffffff",
     "ios": {
       "supportsTablet": true
     },
@@ -56,7 +56,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "cf6ce868-2d1f-4d9f-a4be-9225447a2ec9"
+        "projectId": "64c9efd3-a407-45bd-845b-49ac2d21ab84"
       }
     },
     "owner": "amiriddin",
@@ -64,7 +64,7 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/cf6ce868-2d1f-4d9f-a4be-9225447a2ec9"
+      "url": "https://u.expo.dev/64c9efd3-a407-45bd-845b-49ac2d21ab84"
     }
   }
 }

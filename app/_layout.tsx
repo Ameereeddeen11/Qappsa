@@ -56,13 +56,17 @@ export default function RootLayout() {
                         <Stack.Screen
                             name="index"
                             options={{
-                                headerShown: true,
+                                headerShown: false,
                                 title: "Home",
+                                animation: "slide_from_left",
                             }}
                         />
                         <Stack.Screen
                             name="inventory"
-                            options={{headerShown: true}}
+                            options={{
+                                headerShown: false,
+                                animation: "slide_from_right",
+                            }}
                         />
                         <Stack.Screen
                             name="product"

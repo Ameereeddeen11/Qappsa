@@ -34,7 +34,7 @@ export const MenuComponent = ({date, visible, setVisible, deleteAction}) => {
                 title="Editovat inventuru"
                 leadingIcon="file-edit"
                 onPress={() => {
-                    console.log("Editovat inventuru");
+                    // console.log("Editovat inventuru");
                     setVisible(null);
                 }}
             />

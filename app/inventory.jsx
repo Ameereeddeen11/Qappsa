@@ -1,8 +1,7 @@
-import {useRouter, useGlobalSearchParams, Stack} from "expo-router";
+import {useRouter, useGlobalSearchParams} from "expo-router";
 import {useEffect, useState, useContext, useCallback} from "react";
-import {View, ScrollView, KeyboardAvoidingView, Platform} from "react-native";
-import {Text, Portal, Modal} from "react-native-paper";
-import {RefreshControl} from "react-native";
+import {View, FlatList, KeyboardAvoidingView, Platform, Keyboard, RefreshControl} from "react-native";
+import {Text, Portal, Modal, Appbar} from "react-native-paper";
 import {getProducts, deleteProduct} from "@/utils/products";
 import {deleteInventory} from "@/utils/inventory";
 import {GlobalContext} from "@/context/GlobalProvider";
@@ -85,15 +84,17 @@ export default function Inventory() {
     };
 
     useEffect(() => {
-        fetchProducts()
+        fetchProducts();
     }, []);
 
     useFocusEffect(
         useCallback(() => {
             resetInputs();
             return () => {};
-        }, [id, resetInputs])
+        }, [resetInputs])
     );
+
+    const productsSorted = [...products].sort((a, b) => Number(b.id) - Number(a.id));
 
     if (!permission) {
         return (
@@ -114,29 +115,21 @@ export default function Inventory() {
     }
 
     return (
-        <SafeAreaView>
-            <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
-                style={{height: "100%"}}
-            >
-                <Stack.Screen
-                    options={{
-                        title: id,
-                        headerRight: () => (
-                            <MenuComponent
-                                date={id}
-                                visible={visible}
-                                setVisible={setVisible}
-                                deleteAction={handleDeleteInventory}
-                            />
-                        ),
-                    }}
+        <>
+            <Appbar.Header mode={"small"}>
+                <Appbar.BackAction onPress={() => router.push({pathname: "/"})}/>
+                <Appbar.Content title={date}/>
+                <MenuComponent
+                    date={id}
+                    visible={visible}
+                    setVisible={setVisible}
+                    deleteAction={handleDeleteInventory}
                 />
-                <ScrollView
-                    contentContainerStyle={styles.container}
-                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh}/>}
-                    keyboardShouldPersistTaps="handled"
-                    bounces={false}
+            </Appbar.Header>
+            <SafeAreaView style={styles.container}>
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                    style={{height: "100%"}}
                 >
                     <Portal>
                         <Modal visible={modal} onDismiss={hideModal}>
@@ -166,30 +159,43 @@ export default function Inventory() {
                         scaleAnimated={scaleAnimated}
                         onIdChange={setIdProduct}
                         onCountChange={setCount}
-                        onSave={saveManual}
-                    />
-
-                    <ProductList
-                        products={products}
-                        visible={visible}
-                        onSetVisible={setVisible}
-                        onShowModal={showModal}
-                        onEditProduct={(item) => {
-                            setIdProduct(item.id);
-                            setCount(item.count);
-                            setOpenedForEdit(item.id);
-                            setModal(true);
-                            setVisible(null);
+                        onSave={() => {
+                            saveManual();
+                            Keyboard.dismiss();
                         }}
-                        onRemoveProduct={removeScannedCode}
                     />
-                </ScrollView>
-
-                <SaveSnackbar
-                    visible={saved}
-                    onDismiss={() => setSaved(false)}
-                />
-            </KeyboardAvoidingView>
-        </SafeAreaView>
+                    <FlatList
+                        data={productsSorted}
+                        keyExtractor={item => item.id?.toString()}
+                        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh}/>} 
+                        // inverted={true}
+                        renderItem={({item}) => (
+                            <ProductList
+                                products={[item]}
+                                visible={visible}
+                                onSetVisible={setVisible}
+                                onShowModal={showModal}
+                                onEditProduct={(item) => {
+                                    setIdProduct(item.id);
+                                    setCount(item.count);
+                                    setOpenedForEdit(item.id);
+                                    setModal(true);
+                                    setVisible(null);
+                                }}
+                                onRemoveProduct={removeScannedCode}
+                            />
+                        )}
+                        contentContainerStyle={{paddingBottom: "30%"}}
+                        ListEmptyComponent={<Text style={styles.message}>Žádné produkty</Text>}
+                        ListFooterComponent={
+                            <SaveSnackbar
+                                visible={saved}
+                                onDismiss={() => setSaved(false)}
+                            />
+                        }
+                    />
+                </KeyboardAvoidingView>
+            </SafeAreaView>
+        </>
     );
 }

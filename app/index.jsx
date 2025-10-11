@@ -1,14 +1,15 @@
 import {useCameraPermissions} from "expo-camera";
 import {Stack, router} from "expo-router";
 import {useCallback, useState} from "react";
-import {StyleSheet, View, RefreshControl, ScrollView, Dimensions} from "react-native";
+import {StyleSheet, View, RefreshControl, ScrollView, Dimensions, FlatList} from "react-native";
 import {
     IconButton,
     Icon,
     Button,
     Text,
     Divider,
-    TouchableRipple
+    TouchableRipple,
+    Appbar
 } from "react-native-paper";
 import {SafeAreaView} from "react-native-safe-area-context";
 import {
@@ -70,77 +71,71 @@ export default function HomeScreen() {
                 <Text style={styles.message}>
                     We need your permission to show the camera
                 </Text>
-                <Button mode="contained" onPress={requestPermission}>
+                <Button mode="contained" onPress={requestPermission} style={{marginHorizontal: 20}}>
                     Grant Permission
                 </Button>
             </SafeAreaView>
         );
     }
 
+    const inventoriesSorted = Array.isArray(inventories)
+        ? [...inventories].sort((a, b) => Number(b.id) - Number(a.id))
+        : Object.values(inventories).sort((a, b) => Number(b.id) - Number(a.id));
+
     return (
-        <SafeAreaView style={styles.container}>
-            <Stack.Screen
-                options={{
-                    headerRight: () => (
-                        <IconButton
-                            icon="plus"
-                            onPress={handleAddInventory}
-                            style={{margin: 0}}
-                        />
-                    )
-                }}
-            />
-            <ScrollView
-                // contentContainerStyle={styles.container}
+        <>
+            <Appbar.Header mode={"small"}>
+                <Appbar.Content title="Inventury"/>
+                <Appbar.Action icon="plus" onPress={handleAddInventory}/>
+            </Appbar.Header>
+            <FlatList
+                data={inventoriesSorted}
+                keyExtractor={item => item.id?.toString()}
                 refreshControl={
                     <RefreshControl
                         refreshing={refreshing}
                         onRefresh={fetchData}
                     />
                 }
-            >
-                {Object.keys(inventories).length === 0 ? (
-                    <Text style={{textAlign: "center", paddingBottom: deviceHeight / 2}}>Žádné inventury</Text>
-                ) : (
-                    <>
-                        {Object.entries(inventories).map(([id, inv]) => (
-                            // <View key={id}>
-                                <TouchableRipple
-                                    key={id}
-                                    style={styles.card}
-                                    onPress={() =>
-                                        router.push({pathname: "/inventory", params: {id, date: inv.name}})
-                                    }
-                                >
-                                    <>
-                                        <Text variant="titleMedium">{inv?.name}</Text>
-                                        <Text variant="titleMedium">{inv?.products?.length || 0}</Text>
-                                        <MenuComponent
-                                            date={inv.id}
-                                            visible={visible}
-                                            setVisible={setVisible}
-                                            deleteAction={() => {
-                                                void deleteInventory(id).then(() => {
-                                                    setVisible(null);
-                                                    getInventories().then(setInventories);
-                                                })
-                                            }}
-                                        />
-                                    </>
-                                </TouchableRipple>
-                            // </View>
-                        ))}
-                    <Divider/>
-                    </>
+                renderItem={({item}) => (
+                    <View key={item.id}>
+                        <Divider/>
+                        <TouchableRipple
+                            style={styles.card}
+                            onPress={() =>
+                                router.navigate({pathname: "/inventory", params: {id: item.id, date: item.name}})
+                            }
+                        >
+                            <>
+                                <Text variant="titleMedium">{item?.name}</Text>
+                                <Text variant="titleMedium">{item?.products?.length || 0}</Text>
+                                <MenuComponent
+                                    date={item.id}
+                                    visible={visible}
+                                    setVisible={setVisible}
+                                    deleteAction={() => {
+                                        void deleteInventory(item.id).then(() => {
+                                            setVisible(null);
+                                            getInventories().then(setInventories);
+                                        })
+                                    }}
+                                />
+                            </>
+                        </TouchableRipple>
+                    </View>
                 )}
-            </ScrollView>
-        </SafeAreaView>
+                ListEmptyComponent={<Text style={{textAlign: "center", paddingBottom: deviceHeight / 2}}>Žádné
+                    inventury</Text>}
+                contentContainerStyle={{paddingBottom: 20, height: deviceHeight}}
+            />
+        </>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
-        height: deviceHeight,
+        flex: 1,
+        justifyContent: "center",
     },
     centered: {
         flex: 1,
