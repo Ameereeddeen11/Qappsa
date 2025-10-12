@@ -1,10 +1,8 @@
 import {useCameraPermissions} from "expo-camera";
-import {Stack, router} from "expo-router";
+import {router} from "expo-router";
 import {useCallback, useState} from "react";
-import {StyleSheet, View, RefreshControl, ScrollView, Dimensions, FlatList} from "react-native";
+import {StyleSheet, View, RefreshControl, Dimensions, FlatList} from "react-native";
 import {
-    IconButton,
-    Icon,
     Button,
     Text,
     Divider,
@@ -27,7 +25,6 @@ export default function HomeScreen() {
     const [inventories, setInventories] = useState([]);
     const [visible, setVisible] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
-    // const router = useRouter();
 
     const handleAddInventory = () => {
         const date = new Date().toISOString().split("T")[0];
@@ -124,9 +121,8 @@ export default function HomeScreen() {
                         </TouchableRipple>
                     </View>
                 )}
-                ListEmptyComponent={<Text style={{textAlign: "center", paddingBottom: deviceHeight / 2}}>Žádné
-                    inventury</Text>}
-                contentContainerStyle={{paddingBottom: 20, height: deviceHeight}}
+                ListEmptyComponent={<Text style={{textAlign: "center", paddingBottom: deviceHeight / 2}}>Žádné inventury</Text>}
+                contentContainerStyle={{height: "100%"}}
             />
         </>
     );

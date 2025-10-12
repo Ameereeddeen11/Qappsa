@@ -2,7 +2,6 @@ import {IconButton, Menu} from "react-native-paper";
 import {Divider} from "react-native-paper";
 import {exportToCSV, formatDataForExport} from "@/utils/export";
 import {deleteInventory, getInventoryByDate} from "@/utils/inventory";
-import {router} from "expo-router";
 
 export const MenuComponent = ({date, visible, setVisible, deleteAction}) => {
     return (
@@ -25,7 +24,7 @@ export const MenuComponent = ({date, visible, setVisible, deleteAction}) => {
                 onPress={() => {
                     getInventoryByDate(date).then((data) => {
                         // formatDataForExport(data);
-                        exportToCSV(data.products, date);
+                        exportToCSV(data.products, data.name);
                     });
                     setVisible(null);
                 }}

@@ -18,15 +18,15 @@ export function ManualInput({
                 keyboardType="numeric"
                 value={idProduct}
                 onChangeText={onIdChange}
-                style={styles.input}
+                style={styles.inputId}
             />
             <TextInput
-                label="Počet kusů"
+                label="Počet"
                 mode="outlined"
                 keyboardType="numeric"
                 value={count}
                 onChangeText={onCountChange}
-                style={styles.input}
+                style={styles.inputCount}
             />
             <Animated.View style={[
                 {transform: [{scale: scaleAnimated}]},
@@ -51,8 +51,11 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
         marginVertical: 15,
     },
-    input: {
-        width: "40%",
+    inputId: {
+        width: "55%",
+    },
+    inputCount: {
+        width: "25%",
     },
     saveButton: {
         width: "15%",

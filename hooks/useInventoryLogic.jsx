@@ -27,7 +27,7 @@ export function useInventoryLogic(inventoryId, setProducts) {
         const countNum = Number(count || "1");
 
         if (!Number.isFinite(idNum) || idNum <= 0 || !Number.isFinite(countNum) || countNum <= 0) {
-            alert("Zadejte platné ID a počet větší než 0.");
+            Alert.alert("Chyba", "Zadejte platné ID a počet větší než 0.");
             return false;
         }
 

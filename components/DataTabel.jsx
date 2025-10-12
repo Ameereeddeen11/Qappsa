@@ -1,11 +1,7 @@
 import {DataTable, Divider, IconButton, Menu} from 'react-native-paper';
 import {Alert, StyleSheet} from "react-native";
 
-export function CustomDataTable({product, visible, onSetVisible, onShowModal, onEditProduct, onRemoveProduct}) {
-    const handleEdit = (product) => {
-        onEditProduct(product);
-    };
-
+export function CustomDataTable({product, visible, onSetVisible, onShowModal, onRemoveProduct}) {
     const handleRemove = (item) => {
         Alert.alert("Neuložené změny", "Vstupní pole byla změněna. Chcete změny uložit nebo zahodit před skenováním?", [{
             text: "Smazat", style: "destructive", onPress: async () => {
@@ -21,7 +17,7 @@ export function CustomDataTable({product, visible, onSetVisible, onShowModal, on
         <DataTable>
             {product.map((item) => (
                 <DataTable.Row key={item.id} styles={styles.tableRow}>
-                    <DataTable.Cell numeric style={styles.tableHeader}>{item.id}</DataTable.Cell>
+                    <DataTable.Cell numeric style={styles.tableHeader} >{item.id}</DataTable.Cell>
                     <DataTable.Cell numeric>{item.count || 0}</DataTable.Cell>
                     <DataTable.Cell numeric>
                         <Menu
@@ -39,7 +35,10 @@ export function CustomDataTable({product, visible, onSetVisible, onShowModal, on
                             <Menu.Item
                                 title="Editovat produkt"
                                 leadingIcon="file-edit"
-                                onPress={() => handleEdit(item.id)}
+                                onPress={() => {
+                                    onShowModal(item.id)
+                                    onSetVisible(null);
+                                }}
                             />
                             <Divider/>
                             <Menu.Item
