@@ -47,6 +47,7 @@
           "backgroundColor": "#ffffff"
         }
       ],
+      "expo-system-ui",
       "expo-font",
       "expo-web-browser"
     ],

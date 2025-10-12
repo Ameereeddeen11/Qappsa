@@ -66,10 +66,10 @@ export default function HomeScreen() {
         return (
             <SafeAreaView style={styles.container}>
                 <Text style={styles.message}>
-                    We need your permission to show the camera
+                    Potřebujeme vaše svolení k zobrazení kamery
                 </Text>
                 <Button mode="contained" onPress={requestPermission} style={{marginHorizontal: 20}}>
-                    Grant Permission
+                    Udělit oprávnění
                 </Button>
             </SafeAreaView>
         );

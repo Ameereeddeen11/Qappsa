@@ -3,13 +3,17 @@ import {
     DefaultTheme,
     ThemeProvider,
 } from "@react-navigation/native";
+import {useEffect} from "react";
 import {Stack} from "expo-router";
 import {StatusBar} from "expo-status-bar";
 import {PaperProvider} from "react-native-paper";
 import {GlobalProvider} from "@/context/GlobalProvider";
+import * as SystemUI from 'expo-system-ui';
 import {useColorScheme} from "@/hooks/useColorScheme";
-import {useCallback, useEffect, useState} from "react";
-import {View} from "react-native";
+
+// import {useColorScheme} from "@/hooks/useColorScheme";
+// import {useCallback, useEffect, useState} from "react";
+// import {View} from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 
 // SplashScreen.setOptions({
@@ -17,7 +21,7 @@ import * as SplashScreen from "expo-splash-screen";
 //     fade: true
 // })
 //
-// SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
     const colorScheme = useColorScheme();
@@ -46,6 +50,26 @@ export default function RootLayout() {
     // if (!appIsReady) {
     //     return null;
     // }
+
+    // SystemUI.setBackgroundColorAsync(colorScheme === "dark" ? DarkTheme.colors.background : DefaultTheme.colors.background);
+
+    useEffect(() => {
+        const setupApp = async () => {
+            try {
+                await SystemUI.setBackgroundColorAsync(
+                    colorScheme === "dark"
+                        ? DarkTheme.colors.background
+                        : DefaultTheme.colors.background
+                );
+            } catch (error) {
+                console.error('Error setting background color:', error);
+            } finally {
+                await SplashScreen.hideAsync();
+            }
+        };
+
+        setupApp();
+    }, [colorScheme]);
 
     return (
         <PaperProvider>

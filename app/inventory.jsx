@@ -118,7 +118,7 @@ export default function Inventory() {
     return (
         <>
             <Appbar.Header mode={"small"}>
-                <Appbar.BackAction onPress={() => router.push({pathname: "/"})}/>
+                <Appbar.BackAction onPress={() => router.replace({pathname: "/"})}/>
                 <Appbar.Content title={date}/>
                 <MenuComponent
                     date={id}
