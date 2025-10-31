@@ -2,7 +2,7 @@
   "expo": {
     "name": "qappsa",
     "slug": "qappsa",
-    "version": "1.0.0",
+    "version": "0.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
     "scheme": "qappsa",
@@ -23,7 +23,8 @@
         "android.permission.RECORD_AUDIO",
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO"
-      ]
+      ],
+      "package": "com.qappsa.ada"
     },
     "web": {
       "bundler": "metro",
@@ -44,7 +45,11 @@
           "image": "./assets/images/logo.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#000000",
+          "dark": {
+            "image": "./assets/images/logo.png",
+            "backgroundColor": "#000000"
+          }
         }
       ],
       "expo-system-ui",
